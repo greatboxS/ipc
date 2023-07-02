@@ -1,7 +1,7 @@
 #include "ipc_port_dbus.h"
-#include "../../include/ipc_message.h"
-#include "../../include/ipc_profile.h"
-#include "../dbus/dbus_server_proxy.h"
+#include "ipc_message.h"
+#include "ipc_profile.h"
+#include "dbus/dbus_server_proxy.h"
 #include "ipc_utility.h"
 
 namespace gbs

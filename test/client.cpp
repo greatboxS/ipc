@@ -1,7 +1,9 @@
 #include "../include/ipc_args.h"
 #include "../include/ipc_message.h"
 #include "../include/ipc_port.h"
+#ifndef _MSC_VER
 #include "../src/proxy/ipc_proxy_dbus.h"
+#endif
 #include "ipc_profile.h"
 #include <chrono>
 #include <iostream>
@@ -38,6 +40,7 @@ int main(int argc, char const *argv[]) noexcept {
     args << 1 << "dddddddddddddddfefe" << std::string("parsing data from string and return it 2ssssssssssss");
     message->setArgs(args);
 
+#ifndef _MSC_VER
     auto connection = sdbus::createSessionBusConnection();
 
     auto profile = new gbs::ipc::DBusProfile("gbs.ipc.dbus.Service.Service1", 1, 1);
@@ -61,6 +64,6 @@ int main(int argc, char const *argv[]) noexcept {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-
+#endif
     return 0;
 }

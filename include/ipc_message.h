@@ -78,6 +78,7 @@ namespace gbs
             int setArgs(IpcArgs<Argv...> &args) {
                 if (args.bin().size() == 0) return -1;
                 m_content = args.bin();
+                return 0;
             }
         };
 

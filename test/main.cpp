@@ -1,9 +1,7 @@
 #include "../include/ipc_args.h"
 #include "../include/ipc_message.h"
-#include <iostream>
-
-#include "../src/proxy/ipc_proxy_dbus.h"
 #include "ipc_profile.h"
+#include <iostream>
 
 namespace gbs
 {
@@ -50,17 +48,6 @@ int main(int argc, char const *argv[]) noexcept {
     args << 1 << "dddddddddddddddfefe" << std::string("parsing data from string and return it 2ssssssssssss");
     message->setArgs(args);
     printMessage<int, const char *, std::string>(message);
-
-    auto connection = sdbus::createSessionBusConnection();
-    // connection->requestName("gbs.ipc.dbus.Broker");
-    // connection->requestName("gbs.ipc.dbus.Service.Service2");
-
-    auto profile = new gbs::ipc::DBusProfile("gbs.ipc.dbus.Broker.Service12", 1, 1);
-    gbs::ipc::IpcDbusProxy proxy(profile, std::move(connection), "/Service12", "gbs.ipc.dbus.Broker");
-    proxy.connect();
-
-    // while (1)
-    //     ;
 
     return 0;
 }

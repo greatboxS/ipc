@@ -1,6 +1,8 @@
 #include "../include/ipc_args.h"
 #include "../include/ipc_message.h"
+#ifndef _MSC_VER
 #include "../src/broker/ipc_broker_dbus.h"
+#endif
 #include "ipc_profile.h"
 #include <iostream>
 
@@ -30,6 +32,7 @@ namespace gbs
 
 int main(int argc, char const *argv[]) noexcept {
 
+#ifndef _MSC_VER
     auto connection = sdbus::createSessionBusConnection("gbs.ipc.dbus.Broker");
 
     gbs::ipc::IpcProfile *profile = new gbs::ipc::DBusProfile("gbs.ipc.dbus.Broker.Broker1", 1, 1);
@@ -37,6 +40,6 @@ int main(int argc, char const *argv[]) noexcept {
     broker.start();
     while (1)
         ;
-
+#endif
     return 0;
 }
