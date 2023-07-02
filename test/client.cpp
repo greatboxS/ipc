@@ -2,7 +2,7 @@
 #include "../include/ipc_message.h"
 #include "../include/ipc_port.h"
 #ifndef _MSC_VER
-#include "../src/proxy/ipc_proxy_dbus.h"
+#include "../src/proxy/dbus/ipc_proxy_dbus.h"
 #endif
 #include "ipc_profile.h"
 #include <chrono>

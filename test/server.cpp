@@ -1,7 +1,7 @@
 #include "../include/ipc_args.h"
 #include "../include/ipc_message.h"
 #ifndef _MSC_VER
-#include "../src/broker/ipc_broker_dbus.h"
+#include "../src/broker/dbus/ipc_broker_dbus.h"
 #endif
 #include "ipc_profile.h"
 #include <iostream>
