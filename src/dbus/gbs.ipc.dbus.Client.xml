@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+    <interface name="gbs.ipc.dbus.Client">
+        <method name="sendMessage">
+            <annotation name="org.freedesktop.DBus.Method.Async" value="client" />
+            <arg name="sender" type="s" direction="in"/>
+            <arg name="message" type="ay" direction="in"/>
+            <arg name="error" type="i" direction="out"/>
+        </method>
+
+        <method name="publishMessage">
+            <annotation name="org.freedesktop.DBus.Method.Async" value="client" />
+            <arg name="sender" type="s" direction="in"/>
+            <arg name="message" type="ay" direction="in"/>
+            <arg name="error" type="i" direction="out"/>
+        </method>
+
+        <property name="name" type="s" access="read"/>
+        <property name="messageSize" type="t" access="read"/>
+        <property name="messageCount" type="t" access="read"/>
+        <property name="commonError" type="i" access="read"/>
+    </interface>
+</node>

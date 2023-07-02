@@ -1,0 +1,60 @@
+@startuml
+skinparam groupInheritance 2
+
+class IpcProfile {
+    + virtual ProfileId Id() = 0;
+    + virtual const char *GetName() = 0;
+    + virtual GroupId GetGroupdId() = 0;
+    + virtual AppId GetAppId() = 0;
+}
+
+class IpcPort {
+    + virtual int Id() = 0;
+    + virtual IpcProfile *Profile() = 0;
+    + virtual const char *GetName() = 0;
+    + virtual const IpcMessage *Read() = 0;
+    + virtual int Write(const IpcMessage *msg) = 0;
+}
+
+class IpcProxy {
+    <b>public:</b>
+    ---
+    + virtual int Connect() = 0;
+    + virtual int Disconnect() = 0;
+    + virtual bool IsConnected() = 0;
+    + virtual const IpcPort *GetPort() = 0;
+}
+
+class IpcAbstractInstance {
+    <b>protected:</b>
+    ---
+    - IpcPort *m_IpcPort
+    - std::string m_instanceName;
+    - AppId m_appId;
+    - ProfileId m_profileId;
+    - GroupId m_groupId;
+
+    - void eventLoop(const void *argv);
+
+    <b>public:</b>
+    ---
+    + virtual ProfileId Id();
+    + virtual const char *GetName();
+    + virtual GroupId GetGroupdId();
+    + virtual AppId GetAppId();
+
+    + virtual int Connect();
+    + virtual int Disconnect();
+    + virtual bool IsConnected();
+    + virtual const IpcPort *Port();
+
+    + virtual int onConnected() = 0;
+    + virtual int onDisconnected() = 0;
+    + virtual int onDataIn(const IpcIMessage *msg) = 0;
+}
+
+IPCProxy <|-- IPCAbstractInstance
+IpcProfile <|-- IPCAbstractInstance
+IpcPort "1" *-- IPCAbstractInstance
+
+@enduml
