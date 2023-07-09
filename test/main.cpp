@@ -2,6 +2,8 @@
 #include "../include/ipc_message.h"
 #include "ipc_profile.h"
 #include <iostream>
+#include "../src/os/osac/CThread.h"
+#include "../src/os/worker/CWorker.h"
 
 namespace gbs
 {
@@ -49,5 +51,17 @@ int main(int argc, char const *argv[]) noexcept {
     message->setArgs(args);
     printMessage<int, const char *, std::string>(message);
 
+    gbs::osac::CThread thread;
+    thread.Create("thread1");
+
+    gbs::osac::CWorker worker("worker1", [](void *param) {
+        std::cout << "worker run" << std::endl;
+        sleep(1);
+        return (void *)NULL;
+    });
+
+    worker.StartWorker();
+
+    sleep(10);
     return 0;
 }

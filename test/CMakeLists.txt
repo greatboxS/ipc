@@ -24,4 +24,3 @@ target_link_libraries(main PUBLIC ipc)
 add_dependencies(client ipc)
 add_dependencies(server ipc)
 add_dependencies(main ipc)
-

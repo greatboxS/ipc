@@ -12,9 +12,9 @@ namespace gbs
         typedef int32_t AppId;
 
         enum class IpcType {
-            SHM = 0,
-            SOCKET,
-            DBUS,
+            eSharedMemory = 0,
+            eSocket,
+            eDbus,
         };
 
         class IpcProfile
