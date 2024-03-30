@@ -1,0 +1,20 @@
+<node>
+  <interface name="com.example.MyInterface">
+    <method name="sendMessage">
+      <arg name="dest" type="s" direction="in"/>
+      <arg name="message" type="s" direction="in"/>
+      <arg name="response" type="i" direction="out"/>
+    </method>
+    <signal name="clientError">
+      <arg name="name" type="s"/>
+      <arg name="code" type="i"/>
+    </signal>
+    <signal name="serverError">
+      <arg name="name" type="s"/>
+      <arg name="code" type="i"/>
+    </signal>
+    <property name="messageSize" type="t" access="read"/>
+    <property name="messageCount" type="t" access="read"/>
+
+  </interface>
+</node>
