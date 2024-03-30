@@ -76,25 +76,24 @@ static void backtraceWindowsInit();
 
 #endif
 
-namespace except
-{
-    void backtraceInit() {
-        printBacktrace = true;
-        printQmlStack = true;
-        dumpCore = true;
-        waitForGdbAttach = 0;
+namespace except {
+void backtraceInit() {
+    printBacktrace = true;
+    printQmlStack = true;
+    dumpCore = true;
+    waitForGdbAttach = 0;
 
-        demangleBufferSize = 768;
-        demangleBuffer = static_cast<char *>(malloc(demangleBufferSize));
-        backtraceLineOut = new std::string();
-        backtraceLineOut->reserve(BACKTRACE_BUFFER_SIZE);
+    demangleBufferSize = 768;
+    demangleBuffer = static_cast<char *>(malloc(demangleBufferSize));
+    backtraceLineOut = new std::string();
+    backtraceLineOut->reserve(BACKTRACE_BUFFER_SIZE);
 
 #if defined(LINUX)
-        backtraceUnixInit();
+    backtraceUnixInit();
 #elif defined(_WIN32)
-        backtraceWindowsInit();
+    backtraceWindowsInit();
 #endif
-    }
+}
 } // namespace except
 
 static void backtracePrintf(FILE *stream, const char *msg, int msgLen = -1) {

@@ -53,46 +53,43 @@
 #define MtxSafeReadLessEqualInt(mtx, obj, val)    MtxSafeReadLessEqual(mtx, obj, static_cast<int>(val))
 #define MtxSafeReadGreaterEqualInt(mtx, obj, val) MtxSafeReadGreaterEqual(mtx, obj, static_cast<int>(val))
 
-namespace gbs
-{
-    namespace osac
-    {
-        class __DLL_DECLSPEC__ CMutex
-        {
-        private:
-            MUTEX_T m_stMtx;
-            char *m_strMtxName;
-            int32_t m_s32IsOpen;
+namespace gbs {
+namespace osac {
+class __DLL_DECLSPEC__ CMutex {
+private:
+    MUTEX_T m_stMtx;
+    char *m_strMtxName;
+    int32_t m_s32IsOpen;
 
-        public:
-            CMutex();
-            ~CMutex();
+public:
+    CMutex();
+    ~CMutex();
 
-            int Create(const char *name = NULL, unsigned int recursive = 0);
+    int Create(const char *name = NULL, unsigned int recursive = 0);
 
-            template <typename T>
-            T SafeRead(T &obj, int *exp = NULL) {
-                T ret;
-                int err = Lock();
-                ret = obj;
-                UnLock();
-                if (exp) *exp = err;
-                return ret;
-            }
+    template <typename T>
+    T SafeRead(T &obj, int *exp = NULL) {
+        T ret;
+        int err = Lock();
+        ret = obj;
+        UnLock();
+        if (exp) *exp = err;
+        return ret;
+    }
 
-            template <typename T>
-            void SafeWrite(T &obj, T val, int *exp = NULL) {
-                int err = Lock();
-                obj = val;
-                UnLock();
-                if (exp) *exp = err;
-            }
+    template <typename T>
+    void SafeWrite(T &obj, T val, int *exp = NULL) {
+        int err = Lock();
+        obj = val;
+        UnLock();
+        if (exp) *exp = err;
+    }
 
-            int Lock(int timeout = 0);
-            int TryLock();
-            int UnLock();
-            int Destroy();
-        };
-    }; // namespace osac
+    int Lock(int timeout = 0);
+    int TryLock();
+    int UnLock();
+    int Destroy();
+};
+}; // namespace osac
 } // namespace gbs
 #endif // __CMUTEX_H__

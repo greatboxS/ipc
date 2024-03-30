@@ -10,49 +10,46 @@
 #include <string>
 #include <tuple>
 
-namespace com
-{
-    namespace example
-    {
+namespace com {
+namespace example {
 
-        class MyInterface_proxy
-        {
-        public:
-            static constexpr const char *INTERFACE_NAME = "com.example.MyInterface";
+class MyInterface_proxy {
+public:
+    static constexpr const char *INTERFACE_NAME = "com.example.MyInterface";
 
-        protected:
-            MyInterface_proxy(sdbus::IProxy &proxy) :
-                proxy_(proxy) {
-                proxy_.uponSignal("clientError").onInterface(INTERFACE_NAME).call([this](const std::string &name, const int32_t &code) { this->onClientError(name, code); });
-                proxy_.uponSignal("serverError").onInterface(INTERFACE_NAME).call([this](const std::string &name, const int32_t &code) { this->onServerError(name, code); });
-            }
+protected:
+    MyInterface_proxy(sdbus::IProxy &proxy) :
+        proxy_(proxy) {
+        proxy_.uponSignal("clientError").onInterface(INTERFACE_NAME).call([this](const std::string &name, const int32_t &code) { this->onClientError(name, code); });
+        proxy_.uponSignal("serverError").onInterface(INTERFACE_NAME).call([this](const std::string &name, const int32_t &code) { this->onServerError(name, code); });
+    }
 
-            ~MyInterface_proxy() = default;
+    ~MyInterface_proxy() = default;
 
-            virtual void onClientError(const std::string &name, const int32_t &code) = 0;
-            virtual void onServerError(const std::string &name, const int32_t &code) = 0;
+    virtual void onClientError(const std::string &name, const int32_t &code) = 0;
+    virtual void onServerError(const std::string &name, const int32_t &code) = 0;
 
-        public:
-            int32_t sendMessage(const std::string &dest, const std::string &message) {
-                int32_t result;
-                proxy_.callMethod("sendMessage").onInterface(INTERFACE_NAME).withArguments(dest, message).storeResultsTo(result);
-                return result;
-            }
+public:
+    int32_t sendMessage(const std::string &dest, const std::string &message) {
+        int32_t result;
+        proxy_.callMethod("sendMessage").onInterface(INTERFACE_NAME).withArguments(dest, message).storeResultsTo(result);
+        return result;
+    }
 
-        public:
-            uint64_t messageSize() {
-                return proxy_.getProperty("messageSize").onInterface(INTERFACE_NAME);
-            }
+public:
+    uint64_t messageSize() {
+        return proxy_.getProperty("messageSize").onInterface(INTERFACE_NAME);
+    }
 
-            uint64_t messageCount() {
-                return proxy_.getProperty("messageCount").onInterface(INTERFACE_NAME);
-            }
+    uint64_t messageCount() {
+        return proxy_.getProperty("messageCount").onInterface(INTERFACE_NAME);
+    }
 
-        private:
-            sdbus::IProxy &proxy_;
-        };
+private:
+    sdbus::IProxy &proxy_;
+};
 
-    } // namespace example
+} // namespace example
 } // namespace com
 
 #endif

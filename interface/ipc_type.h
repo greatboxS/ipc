@@ -5,13 +5,11 @@
 #include <string>
 #include <memory>
 
-namespace gbs
-{
-    namespace ipc
-    {
-        class IpcMessage;
-        typedef std::function<void(const std::string &topic, const std::string &publisher, std::shared_ptr<IpcMessage> message)> IpcTopicCallback;
-    } // namespace ipc
+namespace gbs {
+namespace ipc {
+class IpcMessage;
+typedef std::function<void(const std::string &topic, const std::string &publisher, std::shared_ptr<IpcMessage> message)> IpcTopicCallback;
+} // namespace ipc
 
 } // namespace gbs
 

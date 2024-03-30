@@ -3,25 +3,22 @@
 
 #include "ipc_proxy.h"
 
-namespace gbs
-{
-    namespace ipc
-    {
-        class IpcNetPort;
+namespace gbs {
+namespace ipc {
+class IpcNetPort;
 
-        class IpcNetProxy : public IpcProxy
-        {
-        private:
-        public:
-            explicit IpcNetProxy();
-            virtual ~IpcNetProxy();
+class IpcNetProxy : public IpcProxy {
+private:
+public:
+    explicit IpcNetProxy();
+    virtual ~IpcNetProxy();
 
-            virtual int connect();
-            virtual int disconnect();
-            virtual bool connected();
-            virtual IpcPort *port();
-        };
-    } // namespace ipc
+    virtual int connect();
+    virtual int disconnect();
+    virtual bool connected();
+    virtual IpcPort *port();
+};
+} // namespace ipc
 } // namespace gbs
 
 #endif // __IPC_PROXY_NET_H__

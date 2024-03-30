@@ -2,7 +2,7 @@
 ---
 Language:        Cpp
 # BasedOnStyle:  LLVM
-NamespaceIndentation: All
+NamespaceIndentation: None
 FixNamespaceComments: true
 CompactNamespaces: false
 
@@ -33,7 +33,7 @@ BraceWrapping:
   AfterControlStatement: false # false
   AfterEnum: false # false
   AfterFunction: false # false
-  AfterNamespace: true # false
+  AfterNamespace: false # true
   AfterObjCDeclaration: true # false
   AfterStruct: false # false
   AfterUnion: false # false
@@ -44,11 +44,11 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Custom #Allman
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Attach #Custom #Allman
 BreakBeforeInheritanceComma: false
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializersBeforeComma: false
+BreakConstructorInitializersBeforeComma: true
 BreakConstructorInitializers: AfterColon
 BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: true
@@ -59,7 +59,7 @@ ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
 DerivePointerAlignment: false
-DisableFormat:   false
+DisableFormat: false
 ExperimentalAutoDetectBinPacking: false
 ForEachMacros:   
   - foreach
