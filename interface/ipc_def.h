@@ -54,10 +54,9 @@
 
 #define IPC_OK  0
 #define IPC_ERR -1
-namespace gbs {
+
 namespace ipc {
 
 }
-} // namespace gbs
 
 #endif // __IPC_DEF_H__
