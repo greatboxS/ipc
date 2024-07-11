@@ -111,4 +111,8 @@ size_t mesgqueue_p::size() const {
     return queue.size();
 }
 
+std::shared_ptr<message> message::create(const std::string &sender, const std::string &receiver, const std::string &content) {
+    return std::move(std::shared_ptr<message_p>(new message_p(sender, receiver, content.data(), content.size())));
+}
+
 } // namespace ipc::core

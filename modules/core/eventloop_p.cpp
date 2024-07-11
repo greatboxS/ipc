@@ -3,23 +3,18 @@
 #include <future>
 #include "eventloop_p.h"
 #include "worker_manager.h"
+#include <iostream>
 
 namespace ipc::core {
-
-static uint64_t getId() {
-    static std::atomic<uint64_t> id = 0;
-    id.store(id.load() + 1);
-    return id.load();
-}
 
 evloop_p::evloop_p(uint64_t id) :
     m_mtx{},
     m_id(id),
     m_state(0),
-    m_handle(nullptr),
+    m_handle_ptr({}),
     m_worker(worker_man::get_instance().create()),
-    m_mesgqueue{} {
-}
+    m_mesgqueue(std::make_shared<mesgqueue_p>(1000)),
+    m_task_commpleted_cb(std::function<void()>(std::bind(&evloop_p::task_completed, this))) {}
 
 evloop_p::~evloop_p() {
 }
@@ -47,103 +42,40 @@ int evloop_p::stop() {
     return 0;
 }
 
-void evloop_p::set_handle(const std::function<void(std::shared_ptr<message>)> &handle) {
-    m_handle = handle;
+void evloop_p::set_handle(evloop_handle_ptr handle) {
+    m_handle_ptr = handle;
 }
 
 const worker_base *evloop_p::worker() const {
-    return m_worker->get();
+    return nullptr;
 }
 
 const messagequeue *evloop_p::mesgqueue() const {
-    return &m_mesgqueue;
+    return nullptr;
 }
 
-class evloop_manager::manager_p {
-    friend class evloop_manager;
-
-    manager_p() {
-    }
-
-    ~manager_p() {
-    }
-
-public:
-    std::shared_ptr<evloop> create_evloop(const std::function<void(std::shared_ptr<message>)> &handle = nullptr) {
-        std::shared_ptr<evloop> loop = std::shared_ptr<evloop>(new evloop_p(getId()));
-
-        if (loop != nullptr) {
-            if (handle == nullptr) {
-                loop->set_handle(handle);
-            }
-
-            std::lock_guard<std::mutex> lock(mtx);
-            evloops[loop->id()] = loop;
-        }
-        return std::move(loop);
-    }
-
-    std::weak_ptr<const evloop> get_evloop(uint64_t id) {
-        std::shared_ptr<evloop> loop = std::shared_ptr<evloop>(nullptr);
-        std::lock_guard<std::mutex> lock(mtx);
-        auto iter = evloops.find(id);
-        if (iter != evloops.end()) {
-            loop = iter->second;
-        }
-        return std::weak_ptr<const evloop>(loop);
-    }
-
-    size_t evloop_count() const {
-        std::lock_guard<std::mutex> lock(mtx);
-        return evloops.size();
-    }
-
-    void quit() {
-        std::thread *watcher_thread = new std::thread([this]() {
-            while (true) {
-            }
-        });
-    }
-
-private:
-    mutable std::mutex mtx = {};
-    std::unordered_map<uint64_t, std::shared_ptr<evloop>> evloops = {};
-    std::shared_ptr<worker> m_worker = {nullptr};
-};
-/**
- * @fn evloop_manager()
- * @brief Construct a new evloop manager::evloop manager object
- *
- */
-evloop_manager::evloop_manager() :
-    m_priv(new manager_p()) {
+void evloop_p::post(std::shared_ptr<message> mesg) {
+    std::cout << "evloop_p: post" << std::endl;
+    m_mesgqueue->enqueue(std::move(mesg));
+    m_worker->add_task(evloop_p::task_handle, m_task_commpleted_cb, std::move(m_mesgqueue->dequeue()));
 }
 
-evloop_manager::~evloop_manager() {
-    if (m_priv != nullptr) {
-        delete m_priv;
-        m_priv = nullptr;
+void evloop_p::task_completed() {
+    size_t size = m_mesgqueue->size();
+    if (size > 0) {
+        auto mesg = m_mesgqueue->dequeue();
+        m_worker->add_task(evloop_p::task_handle, m_task_commpleted_cb, std::move(mesg));
     }
 }
 
-evloop_manager &evloop_manager::get_instance() {
-    static evloop_manager instance;
-    return instance;
+void evloop_p::task_handle(std::shared_ptr<message> mesg) {
+    std::cout << "[evloop_p] task_handle: sender " << mesg->sender() << ", receiver: " << mesg->receiver() << ", content: " << mesg->data() << std::endl;
+
+    // std::shared_ptr<std::function<void(std::shared_ptr<message>)>> ptr = handle_ptr.lock();
+    // if (ptr != nullptr) {
+    //     (*ptr.get())(std::move(mesg));
+    // }
 }
 
-std::shared_ptr<evloop> evloop_manager::create_evloop(const std::function<void(std::shared_ptr<message>)> &handle) {
-    return m_priv->create_evloop(handle);
-}
 
-std::weak_ptr<const evloop> evloop_manager::get_evloop(uint64_t id) {
-    return m_priv->get_evloop(id);
-}
-
-size_t evloop_manager::evloop_count() const {
-    return m_priv->evloop_count();
-}
-
-void evloop_manager::quit() {
-    m_priv->quit();
-}
 } // namespace ipc::core

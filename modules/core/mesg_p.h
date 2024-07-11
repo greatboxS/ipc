@@ -35,10 +35,6 @@ private:
     std::string m_data = std::string();
 };
 
-std::shared_ptr<message> message::create(const std::string &sender, const std::string &receiver, const std::string &content) {
-    return std::move(std::shared_ptr<message_p>(new message_p(sender, receiver, content.data(), content.size())));
-}
-
 /**
  * @fn mesgqueue_p
  * @brief

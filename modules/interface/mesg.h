@@ -14,7 +14,7 @@ class message : public std::enable_shared_from_this<message> {
 
 protected:
     message() = default;
-    virtual ~message();
+    virtual ~message() = default;
 
 public:
     virtual uint64_t id() const = 0;
@@ -33,11 +33,9 @@ class message_parser {
 class mesgqueue {
     mesgqueue(const mesgqueue &) = delete;
     mesgqueue &operator=(const mesgqueue &) = delete;
-
 protected:
     mesgqueue() = default;
-    virtual ~mesgqueue();
-
+    virtual ~mesgqueue() = default;
 public:
     virtual int enqueue(std::shared_ptr<message> mesg) = 0;
     virtual std::shared_ptr<message> dequeue() = 0;

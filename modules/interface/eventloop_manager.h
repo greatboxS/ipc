@@ -5,9 +5,10 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
-#include "eventloop.h"
 
 namespace ipc::core {
+    class evloop;
+    class message;
 class evloop_man {
     evloop_man(const evloop_man &) = delete;
     evloop_man &operator=(const evloop_man &) = delete;
@@ -17,11 +18,11 @@ class evloop_man {
 public:
     static evloop_man &get_instance();
 
-    std::shared_ptr<evloop> create_evloop(const std::function<void(std::shared_ptr<message>)> &handle = nullptr);
+    std::shared_ptr<evloop> create_evloop(evloop_handle_ptr handle = {});
     std::weak_ptr<const evloop> get_evloop(uint64_t id);
     size_t evloop_count() const;
     void post_event(int evloop_id, std::shared_ptr<message> mesg);
-    void post_event(std::weak_ptr<const evloop> evloop, std::shared_ptr<message> mesg);
+    void post_event(std::shared_ptr<evloop> evloop, std::shared_ptr<message> mesg);
     void quit();
 
 private:
