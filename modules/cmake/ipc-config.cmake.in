@@ -1,0 +1,32 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/ipc-targets.cmake")
+
+# Check if the ipc package is being used directly or via find_package
+if(NOT TARGET ipc::core)
+    include("${CMAKE_CURRENT_LIST_DIR}/ipc-targets.cmake")
+    return()
+endif()
+
+# Provide the core target
+get_target_property(message_INCLUDE_DIRECTORIES ipc::core INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(message_LIBRARIES ipc::core IMPORTED_LINK_INTERFACE_LIBRARIES)
+
+# Configure the build tree
+set(ipc_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
+# Configure the installed tree
+set(ipc_PREFIX "@CMAKE_INSTALL_PREFIX@")
+set(ipc_CMAKE_DIR "${ipc_PREFIX}/lib/cmake/ipc")
+
+# Export targets for installation in the build tree
+export(EXPORT ipc-targets
+  FILE "${ipc_CMAKE_DIR}/ipc-targets.cmake"
+  NAMESPACE ipc::
+)
+
+# Package version information
+include("${ipc_CMAKE_DIR}/ipc-config-version.cmake")
+
+# Export the package for use from the build-tree
+export(PACKAGE ipc)
