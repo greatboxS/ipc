@@ -44,13 +44,13 @@ class mesgqueue_p : public mesgqueue {
 public:
     explicit mesgqueue_p(size_t size);
     virtual ~mesgqueue_p();
-    int enqueue(std::shared_ptr<message> mesg) override;
-    std::shared_ptr<message> dequeue() override;
-    std::optional<std::shared_ptr<message>> try_dequeue() override;
+    int enqueue(message_ptr mesg) override;
+    message_ptr dequeue() override;
+    std::optional<message_ptr> try_dequeue() override;
     size_t size() const override;
 
 private:
-    std::queue<std::shared_ptr<message>> queue = {};
+    std::queue<message_ptr> queue = {};
     mutable std::mutex mtx = {};
     std::condition_variable cv = {};
     size_t queuesize = 1024U;

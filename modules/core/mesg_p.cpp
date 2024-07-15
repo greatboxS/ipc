@@ -71,7 +71,7 @@ mesgqueue_p::mesgqueue_p(size_t size) :
 mesgqueue_p::~mesgqueue_p() {
 }
 
-int mesgqueue_p::enqueue(std::shared_ptr<message> mesg) {
+int mesgqueue_p::enqueue(message_ptr mesg) {
     int error = 0;
     {
         std::unique_lock<std::mutex> lock(mtx);
@@ -88,7 +88,7 @@ int mesgqueue_p::enqueue(std::shared_ptr<message> mesg) {
     return error;
 }
 
-std::shared_ptr<message> mesgqueue_p::dequeue() {
+message_ptr mesgqueue_p::dequeue() {
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock, [this] { return (queue.empty() == false); });
     auto msg = std::move(queue.front());
@@ -96,7 +96,7 @@ std::shared_ptr<message> mesgqueue_p::dequeue() {
     return msg;
 }
 
-std::optional<std::shared_ptr<message>> mesgqueue_p::try_dequeue() {
+std::optional<message_ptr> mesgqueue_p::try_dequeue() {
     std::unique_lock<std::mutex> lock(mtx);
     if (queue.empty()) {
         return std::nullopt;
@@ -111,7 +111,7 @@ size_t mesgqueue_p::size() const {
     return queue.size();
 }
 
-std::shared_ptr<message> message::create(const std::string &sender, const std::string &receiver, const std::string &content) {
+message_ptr message::create(const std::string &sender, const std::string &receiver, const std::string &content) {
     return std::move(std::shared_ptr<message_p>(new message_p(sender, receiver, content.data(), content.size())));
 }
 

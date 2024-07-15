@@ -19,14 +19,11 @@ class evloop_man::manager_p {
     }
 
 public:
-    std::shared_ptr<evloop> create_evloop(evloop_handle_ptr handle = {}) {
+    std::shared_ptr<evloop> create_evloop(evloop::handle_w_ptr handle = {}) {
         std::shared_ptr<evloop_p> loop = std::shared_ptr<evloop_p>(new evloop_p(getId()));
 
         if (loop != nullptr) {
-            if (handle == nullptr) {
-                loop->set_handle(handle);
-            }
-
+            loop->set_handle(handle);
             std::lock_guard<std::mutex> lock(mtx);
             evloops[loop->id()] = loop;
         }
@@ -50,14 +47,14 @@ public:
         });
     }
 
-    void post_event(int evloop_id, std::shared_ptr<message> mesg) {
+    void post_event(int evloop_id, message_ptr mesg) {
         auto evl = get_evloop_by_id(evloop_id);
         if (evl != nullptr) {
             evl->post(mesg);
         }
     }
 
-    void post_event(std::shared_ptr<evloop> evloop, std::shared_ptr<message> mesg) {
+    void post_event(std::shared_ptr<evloop> evloop, message_ptr mesg) {
         if (evloop != nullptr) {
             auto evl = dynamic_cast<evloop_p *>(evloop.get());
             if (evl != nullptr) {
@@ -70,7 +67,7 @@ private:
 
     std::shared_ptr<evloop_p> get_evloop_by_id(uint64_t id) {
         std::shared_ptr<evloop_p> loop = std::shared_ptr<evloop_p>(nullptr);
-        std::lock_guard<std::mutex> olck(mtx);
+        std::lock_guard<std::mutex> lock(mtx);
         auto iter = evloops.find(id);
         if (iter != evloops.end()) {
             loop = iter->second;
@@ -105,7 +102,7 @@ evloop_man &evloop_man::get_instance() {
     return instance;
 }
 
-std::shared_ptr<evloop> evloop_man::create_evloop(const std::function<void(std::shared_ptr<message>)> &handle) {
+std::shared_ptr<evloop> evloop_man::create_evloop(evloop::handle_w_ptr handle) {
     return m_priv->create_evloop(handle);
 }
 
@@ -121,12 +118,12 @@ void evloop_man::quit() {
     m_priv->quit();
 }
 
-void evloop_man::post_event(int evloop_id, std::shared_ptr<message> mesg) {
-    m_priv->post_event(evloop_id, std::move(mesg));
+void evloop_man::post_event(int evloop_id, message_ptr mesg) {
+    m_priv->post_event(evloop_id, mesg);
 }
 
-void evloop_man::post_event(std::shared_ptr<evloop> evloop, std::shared_ptr<message> mesg) {
-    m_priv->post_event(std::move(evloop), std::move(mesg));
+void evloop_man::post_event(std::shared_ptr<evloop> evloop, message_ptr mesg) {
+    m_priv->post_event(evloop, mesg);
 }
 
 } // namespace ipc::core
