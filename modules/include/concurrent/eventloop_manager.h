@@ -5,8 +5,8 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
-#include "eventloop.h"
-#include "mesg_helpers.h"
+#include "concurrent/eventloop.h"
+#include "concurrent/mesg_args.h"
 
 namespace ipc::core {
 

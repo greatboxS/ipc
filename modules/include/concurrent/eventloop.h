@@ -1,14 +1,13 @@
 #ifndef EVENTLOOP_H
 #define EVENTLOOP_H
 
-#include "common_helpers.h"
 #include <functional>
 #include <memory>
 #include <atomic>
 #include <mutex>
 #include "task.h"
-#include "worker.h"
-#include "mesg.h"
+#include "concurrent/worker.h"
+#include "concurrent/mesg.h"
 
 namespace ipc::core {
 

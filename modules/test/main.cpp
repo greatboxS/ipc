@@ -1,12 +1,11 @@
-#include "mesg.h"
-#include "worker_manager.h"
-#include "eventloop_manager.h"
-#include "eventloop.h"
+#include "concurrent/mesg.h"
+#include "concurrent/mesg_args.h"
+#include "concurrent/worker_manager.h"
+#include "concurrent/eventloop_manager.h"
+#include "concurrent/eventloop.h"
 #include <exception>
 #include <thread>
-#include "mesg.h"
 #include <iostream>
-#include "mesg_helpers.h"
 
 class classA : public std::enable_shared_from_this<classA> {
 public:

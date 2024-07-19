@@ -2,7 +2,7 @@
 #include <atomic>
 #include <future>
 #include "eventloop_p.h"
-#include "worker_manager.h"
+#include "concurrent/worker_manager.h"
 #include <iostream>
 
 namespace ipc::core {

@@ -1,8 +1,8 @@
 #include <shared_mutex>
 #include <mutex>
-#include "eventloop.h"
 #include "mesg_p.h"
-#include "worker.h"
+#include "concurrent/eventloop.h"
+#include "concurrent/worker.h"
 
 namespace ipc::core {
 class evloop_p : public evloop {

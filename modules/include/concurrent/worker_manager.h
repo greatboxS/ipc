@@ -1,7 +1,7 @@
 #ifndef WORKER_MANAGER_H
 #define WORKER_MANAGER_H
 
-#include "worker.h"
+#include "concurrent/worker.h"
 
 namespace ipc::core {
 class worker_man {

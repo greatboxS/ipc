@@ -1,13 +1,13 @@
-#ifndef MESG_HELPERS_H
-#define MESG_HELPERS_H
+#ifndef MESG_ARGS_H
+#define MESG_ARGS_H
 
-#include "mesg.h"
-#include "common_helpers.h"
+
 #include <iostream>
 #include <sstream>
 #include <tuple>
 #include <typeinfo>
 #include <vector>
+#include "concurrent/mesg.h"
 
 namespace ipc::core {
 
@@ -165,7 +165,7 @@ class message_args {
 public:
     static const arg_data<Args...> parse_args(const char *buf, std::size_t size) try {
         if (!buf || size == 0 || buf == (const char *)-1) {
-            ipc::exp::throw_str_exp("Invalid input data!");
+            throw std::runtime_error("Invalid input data!");
         }
 
         std::stringstream stream(std::string(buf, size));
@@ -176,7 +176,7 @@ public:
 
     static const arg_data<Args...> parse_args(std::stringstream &stream) try {
         if (stream.str().size() == 0) {
-            ipc::exp::throw_str_exp("Invalid input data!");
+            throw std::runtime_error("Invalid input data!");
         }
 
         return std::move(parse_args_handle(stream));
@@ -186,7 +186,7 @@ public:
 
     static const arg_data<Args...> parse_args(const std::string &str) try {
         if (str.size() == 0) {
-            ipc::exp::throw_str_exp("Invalid input data!");
+            throw std::runtime_error("Invalid input data!");
         }
 
         std::stringstream stream(str);
@@ -228,7 +228,7 @@ public:
     template <typename T>
     message_args &append(const T &val) try {
         if (typeid(T).hash_code() != m_types[m_index]->hash_code()) {
-            ipc::exp::throw_str_exp("Type is not in order!");
+            throw std::runtime_error("Type is not in order!");
         }
 
         if (index() == 0) {
@@ -241,7 +241,7 @@ public:
 
         if (m_index == maxIndex()) {
             if (this->bin().size() < arg_array<Args...>::size) {
-                ipc::exp::throw_str_exp("Total input argument size is less than total data type size!");
+                throw std::runtime_error("Total input argument size is less than total data type size!");
             }
             m_data = std::move(message_args<Args...>::parse_args(m_stream));
         }
@@ -271,7 +271,7 @@ public:
 
         if (index() == maxIndex()) {
             if (this->bin().size() < arg_array<Args...>::size) {
-                ipc::exp::throw_str_exp("Total input argument size is less than total data type size!");
+                throw std::runtime_error("Total input argument size is less than total data type size!");
             }
             m_data = std::move(message_args<Args...>::parse_args(m_stream));
             m_stream.seekg(0, std::ios_base::beg);
@@ -306,7 +306,7 @@ public:
      */
     void set(const char *buf, size_t size) try {
         if (!buf || size == 0 || buf == (const char *)-1) {
-            ipc::exp::throw_str_exp("Invalid data!\n");
+            throw std::runtime_error("Invalid data!\n");
         }
         clear();
         m_stream = std::move(std::stringstream(std::string(buf, size)));
@@ -344,4 +344,4 @@ private:
 
 } // namespace ipc::core
 
-#endif // MESG_HELPERS_H
+#endif // MESG_ARGS_H

@@ -1,7 +1,7 @@
 #ifndef MESG_P_H
 #define MESG_P_H
 
-#include "mesg.h"
+#include "concurrent/mesg.h"
 #include <queue>
 #include <memory>
 #include <shared_mutex>

@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(ipc VERSION 1.0.0 LANGUAGES CXX)
 
-add_subdirectory(core)
+add_subdirectory(concurrent)
 add_subdirectory(test)
 
 # Custom command to build and install the library first, then run tests
