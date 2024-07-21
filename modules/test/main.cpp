@@ -6,7 +6,9 @@
 #include <exception>
 #include <thread>
 #include <iostream>
-
+#include "exception/except.h"
+#include "debuger/debuger.h"
+#include "shm/shm_instance.h"
 class classA : public std::enable_shared_from_this<classA> {
 public:
     classA() :
@@ -43,6 +45,49 @@ void task_handle(ipc::core::message_ptr mesg) {
 }
 
 int main() {
+    ipc::core::backtrace_init();
+
+    ipc::core::shm_instance shm1("name1", 1024);
+
+    if (shm1.create() != 0) {
+        std::cout << "shm create failed\n";
+        if (shm1.open() != 0) {
+            std::cout << "shm open failed\n";
+        } else {
+            std::cout << "shm_open success\n";
+        }
+    } else {
+        std::cout << "create shm success\n";
+    }
+
+    struct tmp {
+        int a = 0;
+        int b = 10;
+    };
+
+    std::mutex m1;
+
+    std::vector<std::thread> vthread;
+
+    for (int i = 0; i < 10; i++) {
+        vthread.emplace_back([&shm1, i, &m1]() {
+            {
+                std::unique_lock<ipc::core::shm_instance> lock(shm1);
+                tmp *tmp_ptr = shm1.get<tmp>();
+
+                std::cout << "i = " << i << ", a = " << tmp_ptr->a << ", b = " << tmp_ptr->b << std::endl;
+                tmp_ptr->a++;
+                tmp_ptr->b = tmp_ptr->a + 1;
+                using namespace std::chrono_literals;
+                std::this_thread::sleep_for(500ms);
+            }
+        });
+    }
+
+    for (int i = 0; i < 10; i++) {
+        vthread[i].join();
+    }
+    // shm1.destroy();
 
     ipc::core::message_args<int, int, std::string> args;
     args << 1 << 2 << "hello world";
@@ -67,7 +112,20 @@ int main() {
 
     ipc::core::evloop_man::get_instance().post_event(el2, "sender3", "receiver3", 10, 100.0);
 
+    try {
+        ipc_throw_exception("Hello world %s, %d", "fjd", 10);
+    } catch (std::exception &ex) {
+        std::cout << ex.what() << std::endl;
+    } catch (ipc::core::except &ex) {
+        std::cout << ex.what() << std::endl;
+    } catch (...) {
+        std::cout << "other exception\n";
+    }
+
     using namespace std::chrono_literals;
+
+    // throw 1;
+
     std::this_thread::sleep_for(2000ms);
 
     return 0;

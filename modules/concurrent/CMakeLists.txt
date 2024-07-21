@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+project(concurrent VERSION 1.0.0)
+
 file(GLOB INF_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../include/concurrent/*.h )
 
 set(SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/mesg_p.cpp
@@ -8,19 +10,20 @@ set(SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/mesg_p.cpp
 
 
 set(INC_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-set(INF_DIRS "${CMAKE_INSTALL_INCLUDEDIR}/message")
+set(INF_DIRS "${CMAKE_INSTALL_INCLUDEDIR}/concurrent")
 
-add_library(concurrent SHARED ${SRC_FILES})
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 
-target_include_directories(concurrent PUBLIC "$<BUILD_INTERFACE:${INC_DIRS}>"
+target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${INC_DIRS}>"
                                              "$<INSTALL_INTERFACE:${INF_DIRS}>")
-
-
 
 # Installation rules
 include(GNUInstallDirs)  # Load GNU standard install directories
 
-install(TARGETS concurrent
+set(VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${VERSION_STRING} SOVERSION ${PROJECT_VERSION_MAJOR})
+
+install(TARGETS ${PROJECT_NAME}
     EXPORT ipc-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -29,5 +32,4 @@ install(TARGETS concurrent
 )
 
 # Install headers
-install(FILES ${INF_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/concurrent
-)
+install(FILES ${INF_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/concurrent)
