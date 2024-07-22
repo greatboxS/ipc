@@ -72,12 +72,6 @@ int shared_mem_create(SHM_T &shm, const char *name, size_t size) {
     int ret = 0;
     int fd = 0;
 
-    // ret = shared_mem_open(shm, name, size);
-    // if (ret == 0) {
-    //     OSAL_INFO("[%s] Create new shared memory %s success\n", __FUNCTION__, name);
-    //     return ret;
-    // }
-
     GENERATE_SHM_NAME(name);
     fd = shm_open(genName, O_CREAT, SHM_MODE);
     if (fd < 0) {

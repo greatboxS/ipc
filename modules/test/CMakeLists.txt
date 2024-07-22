@@ -13,6 +13,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE concurrent
                                               except
                                               debuger
                                               shared_mem
+                                              message_queue
                                               pthread)
 
 # find_package(ipc COMPONENTS core)

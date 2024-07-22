@@ -82,8 +82,6 @@ int semaphore_create(SEM_T &sem, int value, const char *name) {
     }
 
     GENERATE_SEM_NAME(name);
-    // int ret = semaphore_open(sem, name);
-    // if (ret == RET_OK) return RET_OK;
 
     sem_t *se = sem_open(genName, O_CREAT, SEM_MODE, value);
     if (se == SEM_FAILED) {

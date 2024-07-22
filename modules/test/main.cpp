@@ -9,6 +9,7 @@
 #include "exception/except.h"
 #include "debuger/debuger.h"
 #include "shm/shm_instance.h"
+#include "message_queue/message_queue.h"
 class classA : public std::enable_shared_from_this<classA> {
 public:
     classA() :
@@ -65,15 +66,37 @@ int main() {
         int b = 10;
     };
 
+    ipc::core::message_queue msgqueue1("/msg1", 1000, 100);
+    if (msgqueue1.create() == 0) {
+        std::cout << "create message queue success\n";
+    } else {
+        std::cout << "create message queue failed, try open\n";
+        if (msgqueue1.open() == 0) {
+            std::cout << "open message queue success\n";
+
+        } else {
+            std::cout << "open message queue failed\n";
+        }
+    }
+
     std::mutex m1;
 
     std::vector<std::thread> vthread;
 
     for (int i = 0; i < 10; i++) {
-        vthread.emplace_back([&shm1, i, &m1]() {
+        vthread.emplace_back([&shm1, i, &m1, &msgqueue1]() {
             {
                 std::unique_lock<ipc::core::shm_instance> lock(shm1);
                 tmp *tmp_ptr = shm1.get<tmp>();
+                char buff[1024];
+
+                if (msgqueue1.size() > 0) {
+                    int bytes = msgqueue1.receive(buff, sizeof(buff));
+                    if (bytes > 0) {
+                        std::cout << "receive " << bytes << " from mesgqueue1\n";
+                    }
+                }
+                msgqueue1.send("hello world", sizeof("hello world"));
 
                 std::cout << "i = " << i << ", a = " << tmp_ptr->a << ", b = " << tmp_ptr->b << std::endl;
                 tmp_ptr->a++;

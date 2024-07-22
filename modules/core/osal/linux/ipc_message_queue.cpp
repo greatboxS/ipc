@@ -118,7 +118,7 @@ int mesgqueue_open(MSGQ_T &msgq, const char *name) {
 
     memset(&attr, 0, sizeof(attr));
 
-    if ((fd = mq_open(genName, O_RDWR | BLOCKING_FLAG)) != RET_OK) {
+    if ((fd = mq_open(genName, O_RDWR | BLOCKING_FLAG)) < 0) {
         OSAL_ERR("[%s] mq_open() failed %s\n", __FUNCTION__, __ERROR_STR__);
         return RET_ERR;
     }
@@ -136,8 +136,7 @@ int mesgqueue_open(MSGQ_T &msgq, const char *name) {
     msgq.msgsize = std_str(attr).mq_msgsize;
     msgq.msgcount = std_str(attr).mq_maxmsg;
     msgq.currcount = std_str(attr).mq_curmsgs;
-    OSAL_INFO("[%s] Message info: msgsize = %ld, msgcount = %ld\n", __FUNCTION__, attr.mq_msgsize,
-                  attr.mq_maxmsg);
+    OSAL_INFO("[%s] Message info: msgsize = %ld, msgcount = %ld\n", __FUNCTION__, attr.mq_msgsize, attr.mq_maxmsg);
 
     return RET_OK;
 #endif
@@ -199,11 +198,8 @@ int mesgqueue_create(MSGQ_T &msgq, const char *name, size_t msgsize, size_t msgc
     attr.mq_maxmsg = msgcount;
     attr.mq_msgsize = msgsize;
 
-    ret = mesgqueue_open(msgq, name);
-    if (ret == RET_OK) return RET_OK;
-
     OSAL_ERR("[%s] Message queue %s doesn't exist, Create new one\n", __FUNCTION__, name);
-    if ((fd = mq_open(genName, O_CREAT, MSGQ_MODE, &attr)) != RET_OK) {
+    if ((fd = mq_open(genName, O_CREAT, MSGQ_MODE, &attr)) < 0) {
         OSAL_ERR("[%s] Create message queue %s failed %s\n", __FUNCTION__, name, __ERROR_STR__);
         return RET_ERR;
     }
