@@ -3,14 +3,7 @@
 
 #include "task.h"
 #include "task_helpers.h"
-#include <queue>
 #include <memory>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <functional>
-#include <atomic>
-#include <vector>
 
 namespace ipc::core {
 
@@ -23,6 +16,9 @@ public:
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual void quit() = 0;
+    virtual size_t task_count() const = 0;
+    virtual void wait() = 0;
+    virtual bool wait_for(int ms) = 0;
     virtual void assign_to(int cpu) = 0;
 };
 
@@ -37,105 +33,53 @@ class worker : public worker_base {
         Finalized,
     };
 
+    class impl;
+    std::unique_ptr<impl> m_impl{nullptr};
+
 public:
-    worker() :
-        m_state(worker::Idle),
-        m_finalized(false),
-        m_worker_thread(new(std::nothrow) std::thread(&worker::run, this)),
-        m_task_queue{},
-        m_task_queue_mtx{},
-        m_condition{} {
+    worker();
+    virtual ~worker();
+
+    template <typename F, typename... Args, typename... CallArgs>
+    auto add_task(F &&func, std::function<void()> callback, CallArgs &&...args) {
+        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<CallArgs>(args)...);
+        add_task(new_task);
+        return std::move(new_task);
     }
 
-    ~worker() {
-        if (state() != static_cast<int>(worker::Finalized)) {
-            quit();
-        }
-        if (m_worker_thread != nullptr) {
-            if (m_worker_thread->joinable() == true) {
-                m_worker_thread->join();
-            }
-            delete m_worker_thread;
-            m_worker_thread = nullptr;
-        }
+    template <typename R, typename... Args>
+    auto add_task(R (*func)(Args...), std::function<void()> callback, Args &&...args) {
+        auto new_task = make_task(func, std::move(callback), std::forward<Args>(args)...);
+        add_task(new_task);
+        return std::move(new_task);
     }
 
-    template <typename F, typename... Args>
-    auto add_task(F &&func, std::function<void()> callback, Args &&...args) {
-        return std::move(add_task_handle(std::forward<F>(func), std::move(callback), std::forward<Args>(args)...));
+    template <typename F, typename C, typename... Args>
+    auto add_task(F &&func, std::function<void()> callback, C &&obj, Args &&...args) {
+        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<C>(obj), std::forward<Args>(args)...);
+        add_task(new_task);
+        return new_task;
     }
 
     template <typename F, typename... Args>
     auto add_nocallback_task(F &&func, Args &&...args) {
-        return std::move(add_task_handle(std::forward<F>(func), std::function<void()>(nullptr), std::forward<Args>(args)...));
-    }
-
-    int state() const {
-        return static_cast<int>(m_state.load());
-    }
-
-    void start() {
-        m_state.store(worker::Running);
-    }
-
-    void stop() {
-        m_state.store(worker::Stoped);
-    }
-
-    void quit() {
-        {
-            std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-            m_finalized.store(true);
-            m_state = worker::Finalized;
-        }
-        m_condition.notify_all();
-    }
-
-    void assign_to(int cpu) {
-    }
-
-private:
-    template <typename F, typename... Args>
-    auto add_task_handle(F &&func, std::function<void()> callback, Args &&...args) {
-        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<Args>(args)...);
-        {
-            std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-            m_task_queue.push(new_task);
-        }
-        m_condition.notify_one();
+        auto new_task = make_task(std::forward<F>(func), std::function<void()>(nullptr), std::forward<Args>(args)...);
+        add_task(new_task);
         return std::move(new_task);
     }
 
-    void run() {
-        while (true) {
-            task_base_ptr _task = {nullptr};
-            {
-                std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-                m_condition.wait(lock, [this] {
-                    return ((m_finalized == true) || (m_task_queue.empty() == false));
-                });
+    int state() const override;
+    void start() override;
+    void stop() override;
+    void wait() override;
+    bool wait_for(int ms) override;
+    bool wait_until();
+    void quit() override;
+    size_t task_count() const override;
+    void assign_to(int cpu) override;
 
-                if (m_state == worker::Running) {
-                    _task = std::move(m_task_queue.front());
-                    m_task_queue.pop();
-                }
-                if (m_finalized == true) {
-                    m_task_queue = {};
-                    break;
-                }
-            }
-            if (_task != nullptr) {
-                _task->execute();
-            }
-        }
-    }
-
-    std::atomic<worker_state> m_state = {worker::Idle};
-    std::atomic<bool> m_finalized = {false};
-    std::thread *m_worker_thread = nullptr;
-    std::queue<task_base_ptr> m_task_queue = {};
-    std::mutex m_task_queue_mtx = {};
-    std::condition_variable m_condition = {};
+private:
+    void add_task(task_base_ptr task);
 };
 
 using worker_ptr = std::shared_ptr<worker>;

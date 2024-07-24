@@ -9,7 +9,7 @@ except::except(const char *fnc, int line) noexcept :
 
     char buffer[EXCEPTION_BUFFER_SIZE + 1];
     if (fnc != nullptr) {
-        snprintf(buffer, EXCEPTION_BUFFER_SIZE, "[exception %s:%d] ", fnc, line);
+        snprintf(buffer, EXCEPTION_BUFFER_SIZE, "\033[1;31mipc::core::thrown at \033[4m%s:%d\033[0m\n", fnc, line);
     }
     m_message = std::string(buffer);
 }
@@ -23,7 +23,7 @@ void except::raise(const char *format, ...) {
     char buffer[EXCEPTION_BUFFER_SIZE + 1];
     vsnprintf(buffer, EXCEPTION_BUFFER_SIZE, format, args);
     va_end(args);
-    m_message.append(std::string(buffer));
+    m_message.append("\033[1;36m").append(std::string(buffer)).append("\033[0m");
     throw *this;
 }
 } // namespace ipc::core

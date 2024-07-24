@@ -76,12 +76,16 @@ __DLL_DECLSPEC__ extern const char *GetLastErrorStr();
 
 #define SOCKADDR_V4 SOCKADDR_IN
 #define SOCKADDR_V6 SOCKADDR_IN6
+#define SOCKADDR_H  SOCKADDR_V4
 
 #elif (defined(LINUX) || defined(__linux__))
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/un.h>
+
 #define SOCKADDR_V4    sockaddr_in
 #define SOCKADDR_V6    sockaddr_in6
+#define SOCKADDR_H     sockaddr_un
 #define SOCKET         int
 #define INVALID_SOCKET -1
 
@@ -89,6 +93,7 @@ __DLL_DECLSPEC__ extern const char *GetLastErrorStr();
 
 #endif
 typedef union {
+    SOCKADDR_H un;
     SOCKADDR_V4 v4;
     SOCKADDR_V6 v6;
 } SocketGenericIpAddr_t;
@@ -102,7 +107,6 @@ typedef struct __INetSocketAddress_t {
 typedef struct __Socket_t {
     SOCKET skHandle;
     int32_t s32Error;
-    int32_t s32SocketMode;
     int32_t s32SocketType;
     int32_t s32BlockMode;
     const __Socket_t *pstHostSocket;

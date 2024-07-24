@@ -32,6 +32,8 @@ public:
     };
 
 protected:
+    int32_t m_sockettype;
+    int32_t m_mode;
     int32_t m_s32IsAcceptedSocket;
     int32_t m_s32IsOpen;
     int32_t m_s32IsConnected;
@@ -42,7 +44,7 @@ protected:
     explicit csocket(SOCKET_T &socket);
 
 public:
-    explicit csocket();
+    explicit csocket(int32_t sockettype, int32_t mode);
     virtual ~csocket();
 
     /**
@@ -53,7 +55,7 @@ public:
      * @param mode 			Client/Server mode
      * @return int 			0 if success, otherwise -1
      */
-    int open(int32_t sockettype, int32_t mode);
+    int open();
 
     /**
      * @fn close
@@ -106,6 +108,8 @@ public:
      * @return int 			0 if success, otherwise -1
      */
     int bind(const char *ip, uint16_t port);
+
+    int bind(const char *path);
 
     /**
      * @fn listen
@@ -168,7 +172,7 @@ public:
     int receive_from(char *buff, size_t size, SOCKADDR_T &addr);
 
     /**
-     * @fn send_multicash
+     * @fn send_multicast
      * @brief send a socket UDP multicast
      *
      * @param groupip 		Multicast group Ip
@@ -177,7 +181,7 @@ public:
      * @param size 			Buffer size
      * @return int 			0 if success, otherwise -1
      */
-    int send_multicash(const char *groupip, uint16_t port, const char *buff, size_t size);
+    int send_multicast(const char *groupip, uint16_t port, const char *buff, size_t size);
 
     /**
      * @fn set_recv_buff_size

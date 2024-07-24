@@ -17,11 +17,11 @@ public:
         handle2(ipc::core::evloop::make_handle(std::bind(&classA::function2, this, std::placeholders::_1))) {
     }
     void function1(ipc::core::message_ptr x) {
-        // std::cout << "function1 is running with x = " << x << "\n";
+        std::cout << "function1 is running with x = " << x << "\n";
     }
 
     void function2(ipc::core::message_ptr x) {
-        // std::cout << "function2 is running with x = " << x << "\n";
+        std::cout << "function2 is running with x = " << x << "\n";
         printf("function2\n");
 
         if (x->sender() == "sender3") {
@@ -41,12 +41,16 @@ public:
     ipc::core::evloop::handle_s_ptr handle2;
 };
 
-void task_handle(ipc::core::message_ptr mesg) {
+bool task_handle(ipc::core::message_ptr mesg) {
     std::cout << "Task task_handle\n";
+    if (mesg != nullptr) {
+        std::cout << "message: " << mesg->data() << std::endl;
+    }
 }
 
 int main() {
     ipc::core::backtrace_init();
+    classA a;
 
     ipc::core::shm_instance shm1("name1", 1024);
 
@@ -80,12 +84,10 @@ int main() {
     }
 
     std::mutex m1;
-
-    std::vector<std::thread> vthread;
-
+    ipc::core::worker_ptr wk = std::make_shared<ipc::core::worker>();
     for (int i = 0; i < 10; i++) {
-        vthread.emplace_back([&shm1, i, &m1, &msgqueue1]() {
-            {
+        wk->add_task(
+            [&shm1, &m1, &msgqueue1](int i) {
                 std::unique_lock<ipc::core::shm_instance> lock(shm1);
                 tmp *tmp_ptr = shm1.get<tmp>();
                 char buff[1024];
@@ -103,24 +105,29 @@ int main() {
                 tmp_ptr->b = tmp_ptr->a + 1;
                 using namespace std::chrono_literals;
                 std::this_thread::sleep_for(500ms);
-            }
-        });
+            },
+            nullptr,
+            i);
     }
 
-    for (int i = 0; i < 10; i++) {
-        vthread[i].join();
-    }
+    wk->add_task(task_handle, nullptr, ipc::core::message::create("", "", "hello task"));
+    // wk->add_task(&classA::function1, nullptr, &a, ipc::core::message::create("", "", "hello task"));
+
+    wk->start();
+    wk->wait();
+    bool done = wk->wait_for(1000);
+    std::cout << "task done status: " << done << std::endl;
+    // wk->quit();
     // shm1.destroy();
 
     ipc::core::message_args<int, int, std::string> args;
     args << 1 << 2 << "hello world";
 
-    ipc::core::worker_ptr worker_ptr = ipc::core::worker_man::get_instance().create();
-    worker_ptr->add_task([]() {
-
-    },
-                         nullptr);
-    classA a;
+    ipc::core::worker_ptr worker_ptr = ipc::core::worker_man::get_instance().create_worker();
+    worker_ptr->add_task(
+        []() {
+        },
+        nullptr);
     ipc::core::evloop_ptr el1 = ipc::core::evloop_man::get_instance().create_evloop(a.handle1);
     ipc::core::evloop_ptr el2 = ipc::core::evloop_man::get_instance().create_evloop(a.handle2);
 

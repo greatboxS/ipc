@@ -7,7 +7,7 @@
 #include <stdarg.h>
 #include <memory>
 
-#define ipc_throw_exception(...) ipc::core::except::throw_exception(__FUNCTION__, __LINE__, __VA_ARGS__);
+#define ipc_throw_exception(...) ipc::core::except::throw_exception(__FILE__, __LINE__, __VA_ARGS__);
 
 namespace ipc::core {
 

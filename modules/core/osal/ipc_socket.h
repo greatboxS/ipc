@@ -3,14 +3,14 @@
 
 #include "osal.h"
 namespace ipc::core {
-__dll_declspec__ SOCKET_T socket_create(int32_t sockettype, int32_t socketmode, int blockmode = SOCKET_BLOCKING_MODE, int addrfamily = SOCKET_ADDR_V4);
+__dll_declspec__ SOCKET_T socket_create(int32_t sockettype, int blockmode = SOCKET_BLOCKING_MODE, int addrfamily = SOCKET_ADDR_V4);
 __dll_declspec__ int socket_close(SOCKET_T &sk);
 
 __dll_declspec__ int socket_connect(SOCKET_T &sk, const char *remoteip, uint16_t remoteport);
 __dll_declspec__ int socket_disconnect(SOCKET_T &sk);
 
 __dll_declspec__ int socket_listen(SOCKET_T &sk, uint32_t connection);
-__dll_declspec__ int socket_bind(SOCKET_T &sk, uint16_t port);
+__dll_declspec__ int socket_bind(SOCKET_T &sk, uint16_t port, const char *path = nullptr);
 __dll_declspec__ SOCKET_T socket_accept(SOCKET_T &sk);
 
 __dll_declspec__ int socket_send(SOCKET_T &sk, const char *buff, size_t size);

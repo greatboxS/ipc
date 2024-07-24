@@ -4,15 +4,27 @@
 #include "osal/ipc_socket.h"
 
 namespace ipc::core {
-csocket::csocket() :
-    m_stSk(), m_s32IsOpen(0), m_s32IsConnected(0), m_s32IsAcceptedSocket(0), m_stRemoteAddr(),
+csocket::csocket(int32_t sockettype, int32_t mode) :
+    m_sockettype(sockettype),
+    m_mode(mode),
+    m_stSk(),
+    m_s32IsOpen(0),
+    m_s32IsConnected(0),
+    m_s32IsAcceptedSocket(0),
+    m_stRemoteAddr(),
     m_poSocketSync(NULL) {
     m_poSocketSync = new cmutex();
     m_poSocketSync->create();
 }
 
 csocket::csocket(SOCKET_T &socket) :
-    m_stSk(), m_s32IsOpen(0), m_s32IsConnected(0), m_s32IsAcceptedSocket(0), m_stRemoteAddr(),
+    m_sockettype(-1),
+    m_mode(-1),
+    m_stSk(),
+    m_s32IsOpen(0),
+    m_s32IsConnected(0),
+    m_s32IsAcceptedSocket(0),
+    m_stRemoteAddr(),
     m_poSocketSync(NULL) {
     m_stSk = socket;
     m_poSocketSync = new cmutex();
@@ -37,7 +49,7 @@ csocket::~csocket() {
  * @param mode 			Client/Server mode
  * @return int 			0 if success, otherwise -1
  */
-int csocket::open(int32_t sockettype, int32_t mode) {
+int csocket::open() {
     if (m_s32IsAcceptedSocket) {
         OSAC_ERR("Can not open accepted socket\n");
         return -1;
@@ -46,7 +58,7 @@ int csocket::open(int32_t sockettype, int32_t mode) {
         OSAC_ERR("Socket is openning\n");
         return 0;
     }
-    m_stSk = socket_create(sockettype, mode);
+    m_stSk = socket_create(m_sockettype);
     m_s32IsOpen = m_stSk.skHandle >= 0 ? 1 : 0;
     return m_s32IsOpen ? 0 : -1;
 }
@@ -128,6 +140,10 @@ int csocket::disconnect() {
 int csocket::bind(const char *ip, uint16_t port) {
     m_stSk.stAddrInet.Ip = socket_get_addr_v4(ip, port);
     return socket_bind(m_stSk, port);
+}
+
+int csocket::bind(const char *path) {
+    return socket_bind(m_stSk, 0, path);
 }
 
 /**
@@ -231,7 +247,7 @@ int csocket::receive_from(char *buff, size_t size, SOCKADDR_T &addr) {
 }
 
 /**
- * @fn send_multicash
+ * @fn send_multicast
  * @brief send a socket UDP multicast
  *
  * @param groupip 		Multicast group Ip
@@ -240,7 +256,7 @@ int csocket::receive_from(char *buff, size_t size, SOCKADDR_T &addr) {
  * @param size 			Buffer size
  * @return int 			0 if success, otherwise -1
  */
-int csocket::send_multicash(const char *groupip, uint16_t port, const char *buff, size_t size) {
+int csocket::send_multicast(const char *groupip, uint16_t port, const char *buff, size_t size) {
     int ret = 0;
     m_poSocketSync->lock();
     ret = socket_send_multicast(m_stSk, groupip, port, buff, size);

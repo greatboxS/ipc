@@ -12,7 +12,7 @@ evloop_p::evloop_p(uint64_t id) :
     m_id(id),
     m_state(0),
     m_handle_ptr({}),
-    m_worker(worker_man::get_instance().create()),
+    m_worker(worker_man::get_instance().create_worker()),
     m_mesgqueue(std::make_shared<mesgqueue_p>(1000)),
     m_task_commpleted_cb(std::function<void()>(std::bind(&evloop_p::task_completed, this))) {}
 

@@ -116,11 +116,11 @@ inline const char *parser<const char *>::parse_element(std::stringstream &stream
 
 template <typename... Args>
 class message_args {
-    template <typename... Ts>
+    template <typename... _Arg>
     class arg_data {
     private:
         bool valid;
-        std::tuple<Ts...> data;
+        std::tuple<_Arg...> data;
 
     public:
         arg_data() :
@@ -128,16 +128,16 @@ class message_args {
         ~arg_data() {}
         bool has_value() const { return valid; }
         bool reset() { return valid = false; }
-        void emplace(const std::tuple<Ts...> &args) {
+        void emplace(const std::tuple<_Arg...> &args) {
             data = std::move(args);
             valid = true;
         }
         const auto get() const { return data; }
     };
 
-    template <std::size_t... Is>
-    static auto parse_data(std::stringstream &stream, const std::vector<std::streampos> &pos, std::index_sequence<Is...>) {
-        return std::move(std::make_tuple(parser<Args>::parse_element(stream, pos, Is)...));
+    template <std::size_t... _Size>
+    static auto parse_data(std::stringstream &stream, const std::vector<std::streampos> &pos, std::index_sequence<_Size...>) {
+        return std::move(std::make_tuple(parser<Args>::parse_element(stream, pos, _Size)...));
     }
 
     static auto parse_data(std::stringstream &stream, const std::vector<std::streampos> &pos) {
@@ -199,7 +199,7 @@ public:
         m_index(0),
         m_count(arg_array<Args...>::count),
         m_types(&arg_array<Args...>::types[0]),
-        m_maxIndex(m_count - 1),
+        m_max_index(m_count - 1),
         m_data() {
         set(buf, size);
     }
@@ -208,7 +208,7 @@ public:
         m_index(0),
         m_count(arg_array<Args...>::count),
         m_types(&arg_array<Args...>::types[0]),
-        m_maxIndex(m_count - 1),
+        m_max_index(m_count - 1),
         m_data() {
         set(msg.data(), msg.size());
     }
@@ -217,7 +217,7 @@ public:
         m_index(0),
         m_count(arg_array<Args...>::count),
         m_types(&arg_array<Args...>::types[0]),
-        m_maxIndex(m_count - 1),
+        m_max_index(m_count - 1),
         m_data() {
         clear();
     }
@@ -239,7 +239,7 @@ public:
         m_stream.write(reinterpret_cast<const char *>(&ele), sizeof(ele));
         m_stream.write(reinterpret_cast<const char *>(&val), sizeof(T));
 
-        if (m_index == maxIndex()) {
+        if (m_index == max_index()) {
             if (this->bin().size() < arg_array<Args...>::size) {
                 throw std::runtime_error("Total input argument size is less than total data type size!");
             }
@@ -269,7 +269,7 @@ public:
         m_stream.write(reinterpret_cast<const char *>(&ele), sizeof(ele));
         m_stream.write(val.c_str(), val.size());
 
-        if (index() == maxIndex()) {
+        if (index() == max_index()) {
             if (this->bin().size() < arg_array<Args...>::size) {
                 throw std::runtime_error("Total input argument size is less than total data type size!");
             }
@@ -331,11 +331,11 @@ public:
 
 private:
     inline void next() { m_index = ((int)m_index + 1) % m_count; }
-    inline int32_t maxIndex() const { return static_cast<int32_t>(m_maxIndex); }
+    inline int32_t max_index() const { return static_cast<int32_t>(m_max_index); }
 
 private:
     std::size_t m_count = 0;
-    size_t m_maxIndex = 0;
+    size_t m_max_index = 0;
     int32_t m_index = 0;
     const std::type_info **m_types;
     arg_data<Args...> m_data = {};

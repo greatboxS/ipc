@@ -2,11 +2,11 @@
 #include <WS2tcpip.h>
 
 namespace ipc::core {
-static inline int SOCKET_Valid(SOCKET_T &sk) {
+static inline int socket_is_valid(SOCKET_T &sk) {
     return (sk.skHandle <= 0 ? 0 : 1);
 }
 
-SOCKET_T socket_create(int32_t sockettype, int32_t socketmode, int blockmode, int addrfamily) {
+SOCKET_T socket_create(int32_t sockettype, int blockmode, int addrfamily) {
     SOCKET_T stSocket;
     int domain = (addrfamily == SOCKET_ADDR_V4 ? AF_INET : AF_INET6);
     int type = SOCK_DGRAM;
@@ -32,7 +32,6 @@ SOCKET_T socket_create(int32_t sockettype, int32_t socketmode, int blockmode, in
         return stSocket;
     }
 
-    stSocket.s32SocketMode = socketmode;
     stSocket.s32SocketType = sockettype;
     stSocket.s32BlockMode = blockmode;
     stSocket.stAddrInet.s32AddrFamily = addrfamily;
@@ -41,7 +40,7 @@ SOCKET_T socket_create(int32_t sockettype, int32_t socketmode, int blockmode, in
 }
 
 int socket_close(SOCKET_T &sk) {
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -64,7 +63,7 @@ int socket_connect(SOCKET_T &sk, const char *remoteip, uint16_t remoteport) {
         return RET_ERR;
     }
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -116,7 +115,7 @@ int socket_disconnect(SOCKET_T &sk) {
 }
 
 int socket_listen(SOCKET_T &sk, uint32_t connection) {
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -128,7 +127,7 @@ int socket_listen(SOCKET_T &sk, uint32_t connection) {
     return RET_OK;
 }
 
-int socket_bind(SOCKET_T &sk, uint16_t port) {
+int socket_bind(SOCKET_T &sk, uint16_t port, const char *path) {
     void *socketaddr = NULL;
     SOCKADDR_V4 v4_addr;
     SOCKADDR_V6 v6_addr;
@@ -137,7 +136,7 @@ int socket_bind(SOCKET_T &sk, uint16_t port) {
     memset(&v4_addr, 0, sizeof(v4_addr));
     memset(&v6_addr, 0, sizeof(v6_addr));
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -197,7 +196,7 @@ SOCKET_T socket_accept(SOCKET_T &sk) {
         stSocket.stAddrInet.u32Size = sizeof(SOCKADDR_V6);
     }
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return stSocket;
     }
@@ -216,7 +215,7 @@ SOCKET_T socket_accept(SOCKET_T &sk) {
 int socket_send(SOCKET_T &sk, const char *buff, size_t size) {
     int bytes = 0;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -236,7 +235,7 @@ int socket_send(SOCKET_T &sk, const char *buff, size_t size) {
 int socket_recv(SOCKET_T &sk, char *buff, size_t size) {
     int bytes = 0;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -257,7 +256,7 @@ int socket_send_to(SOCKET_T &sk, SOCKADDR_T &sendaddr, const char *buff, size_t 
     int bytes = 0;
     socklen_t addrSize = 0;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -284,7 +283,7 @@ int socket_recv_from(SOCKET_T &sk, SOCKADDR_T &recvaddr, char *buff, size_t size
     int bytes = 0;
     socklen_t addrSize = 0;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -313,7 +312,7 @@ int socket_send_multicast(SOCKET_T &sk, const char *groupip, uint16_t port, cons
     struct sockaddr_in stGroupSocket;
     char loopch = 0;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -361,7 +360,7 @@ int socket_set_recv_buff(SOCKET_T &sk, uint32_t size) {
     int32_t s32Size = static_cast<int32_t>(size);
     socklen_t len = sizeof(int32_t);
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -377,7 +376,7 @@ int socket_set_send_buff(SOCKET_T &sk, uint32_t size) {
     int32_t s32Size = static_cast<int32_t>(size);
     socklen_t len = sizeof(int32_t);
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -396,7 +395,7 @@ int socket_set_recv_timeout(SOCKET_T &sk, uint32_t ms) {
     pstTime.tv_sec = ms / 1000;
     pstTime.tv_usec = (ms * 1000) % 1000000;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -415,7 +414,7 @@ int socket_set_send_timeout(SOCKET_T &sk, uint32_t ms) {
     pstTime.tv_sec = ms / 1000;
     pstTime.tv_usec = (ms * 1000) % 1000000;
 
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -440,7 +439,7 @@ int socket_set_blocking_mode(SOCKET_T &sk, int32_t mode) {
 }
 
 int socket_set_option(SOCKET_T &sk, SOCKET_OPT &opt) {
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }
@@ -453,7 +452,7 @@ int socket_set_option(SOCKET_T &sk, SOCKET_OPT &opt) {
 }
 
 int socket_get_option(SOCKET_T &sk, SOCKET_OPT &opt) {
-    if (!SOCKET_Valid(sk)) {
+    if (!socket_is_valid(sk)) {
         OSAL_ERR("[%s] Invalid socket\n", __FUNCTION__);
         return RET_ERR;
     }

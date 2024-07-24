@@ -5,26 +5,18 @@
 
 namespace ipc::core {
 class worker_man {
-    worker_man() = default;
-    ~worker_man() = default;
+    class impl;
+    std::unique_ptr<impl> m_impl{nullptr};
+
+    worker_man();
+    ~worker_man();
 
     worker_man(const worker_man &) = delete;
     worker_man &operator=(const worker_man &) = delete;
 
 public:
-    static worker_man &get_instance() {
-        static worker_man sworker_manager;
-        return sworker_manager;
-    }
-
-    worker_ptr create() {
-        auto wk = std::make_shared<worker>();
-        m_workers.push_back(wk);
-        return std::move(wk);
-    }
-
-private:
-    std::vector<worker_ptr> m_workers = {};
+    static worker_man &get_instance();
+    worker_ptr create_worker();
 };
 } // namespace ipc::core
 
