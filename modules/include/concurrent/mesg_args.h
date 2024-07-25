@@ -116,11 +116,11 @@ inline const char *parser<const char *>::parse_element(std::stringstream &stream
 
 template <typename... Args>
 class message_args {
-    template <typename... _Arg>
+    template <typename... _Args>
     class arg_data {
     private:
         bool valid;
-        std::tuple<_Arg...> data;
+        std::tuple<_Args...> data;
 
     public:
         arg_data() :
@@ -128,7 +128,7 @@ class message_args {
         ~arg_data() {}
         bool has_value() const { return valid; }
         bool reset() { return valid = false; }
-        void emplace(const std::tuple<_Arg...> &args) {
+        void emplace(std::tuple<_Args...> &&args) {
             data = std::move(args);
             valid = true;
         }

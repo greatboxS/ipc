@@ -24,10 +24,10 @@ public:
         std::cout << "function2: sender " << x->sender() << std::endl;
         try {
             if (x != nullptr) {
-                ipc::core::message_args<int, double> args(x->data(), x->size());
+                ipc::core::message_args<int *, double> args(x->data(), x->size());
                 if (args.data().has_value()) {
                     auto tp = args.data().get();
-                    std::cout << "args: <int> = " << std::get<int>(tp) << " <double> = " << std::get<double>(tp) << std::endl;
+                    std::cout << "args: <int> = " << *std::get<int*>(tp) << " <double> = " << std::get<double>(tp) << std::endl;
                 }
             }
         } catch (...) {
@@ -145,8 +145,8 @@ int main() {
     ipc::core::message_ptr msg2 = ipc::core::message::create("sender2", "receiver2", "content2");
     ipc::core::evloop_man::get_instance().post_event(el2, std::move(msg2));
 
-    for (int i = 0; i < 100; i++) {
-        ipc::core::evloop_man::get_instance().post_event(el2, std::string("sender ").append(std::to_string(i)), "receiver3", (int)i, 10.0);
+    for (i = 0; i < 100; i++) {
+        ipc::core::evloop_man::get_instance().post_event(el2, std::string("sender ").append(std::to_string(i)), "receiver3", &i, 10.0);
     }
 
     try {
