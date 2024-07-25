@@ -40,9 +40,9 @@ public:
     worker();
     virtual ~worker();
 
-    template <typename F, typename... Args, typename... CallArgs>
-    auto add_task(F &&func, std::function<void()> callback, CallArgs &&...args) {
-        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<CallArgs>(args)...);
+    template <typename F, typename... Args>
+    auto add_task(F &&func, std::function<void()> callback, Args &&...args) {
+        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<Args>(args)...);
         add_task(new_task);
         return std::move(new_task);
     }
@@ -52,13 +52,6 @@ public:
         auto new_task = make_task(func, std::move(callback), std::forward<Args>(args)...);
         add_task(new_task);
         return std::move(new_task);
-    }
-
-    template <typename F, typename C, typename... Args>
-    auto add_task(F &&func, std::function<void()> callback, C &&obj, Args &&...args) {
-        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<C>(obj), std::forward<Args>(args)...);
-        add_task(new_task);
-        return new_task;
     }
 
     template <typename F, typename... Args>
@@ -73,7 +66,6 @@ public:
     void stop() override;
     void wait() override;
     bool wait_for(int ms) override;
-    bool wait_until();
     void quit() override;
     size_t task_count() const override;
     void assign_to(int cpu) override;

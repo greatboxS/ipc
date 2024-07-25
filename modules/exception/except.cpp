@@ -23,7 +23,7 @@ void except::raise(const char *format, ...) {
     char buffer[EXCEPTION_BUFFER_SIZE + 1];
     vsnprintf(buffer, EXCEPTION_BUFFER_SIZE, format, args);
     va_end(args);
-    m_message.append("\033[1;36m").append(std::string(buffer)).append("\033[0m");
+    m_message.append("\033[1;36m").append(std::string(buffer)).append("\033[0m\r\n");
     throw *this;
 }
 } // namespace ipc::core

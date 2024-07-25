@@ -80,21 +80,10 @@ auto make_task(R (*func)(Args...), std::function<void()> callback, Args &&...arg
     return std::make_shared<task<R, std::decay_t<Args>...>>(func, std::move(callback), std::forward<Args>(args)...);
 }
 
-template <typename R, typename... Args, typename... CallArgs>
-auto make_task(R (*func)(Args...), std::function<void()> callback, CallArgs &&...args) {
-    return std::make_shared<task<R, std::decay_t<Args>...>>(func, std::move(callback), std::forward<Args>(args)...);
-}
-
 template <typename R, typename... Args>
 auto make_task(std::_Bind<R(Args...)> func, std::function<void()> callback, Args &&...args) {
     using ReturnType = function_return_type<R>;
     return std::make_shared<task<ReturnType, std::decay_t<Args>...>>(std::move(func), std::move(callback), std::forward<Args>(args)...);
-}
-
-template <typename R, typename... Args, typename... CallArgs>
-auto make_task(std::_Bind<R(Args...)> func, std::function<void()> callback, CallArgs &&...args) {
-    using ReturnType = function_return_type<R>;
-    return std::make_shared<task<ReturnType, std::decay_t<CallArgs>...>>(std::move(func), std::move(callback), std::forward<CallArgs>(args)...);
 }
 
 } // namespace ipc::core

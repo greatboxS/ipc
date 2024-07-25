@@ -17,16 +17,12 @@ public:
         handle2(ipc::core::evloop::make_handle(std::bind(&classA::function2, this, std::placeholders::_1))) {
     }
     void function1(ipc::core::message_ptr x) {
-        std::cout << "function1 is running with x = " << x << "\n";
+        std::cout << "function1: sender " << x->sender() << std::endl;
     }
 
     void function2(ipc::core::message_ptr x) {
-        std::cout << "function2 is running with x = " << x << "\n";
-        printf("function2\n");
-
-        if (x->sender() == "sender3") {
-            std::cout << "parse from sender 3\n";
-
+        std::cout << "function2: sender " << x->sender() << std::endl;
+        try {
             if (x != nullptr) {
                 ipc::core::message_args<int, double> args(x->data(), x->size());
                 if (args.data().has_value()) {
@@ -34,6 +30,7 @@ public:
                     std::cout << "args: <int> = " << std::get<int>(tp) << " <double> = " << std::get<double>(tp) << std::endl;
                 }
             }
+        } catch (...) {
         }
     }
 
@@ -46,6 +43,7 @@ bool task_handle(ipc::core::message_ptr mesg) {
     if (mesg != nullptr) {
         std::cout << "message: " << mesg->data() << std::endl;
     }
+    return false;
 }
 
 int main() {
@@ -85,9 +83,10 @@ int main() {
 
     std::mutex m1;
     ipc::core::worker_ptr wk = std::make_shared<ipc::core::worker>();
-    for (int i = 0; i < 10; i++) {
+    int i = 0;
+    for (i = 0; i < 10; i++) {
         wk->add_task(
-            [&shm1, &m1, &msgqueue1](int i) {
+            [&shm1, &m1, &msgqueue1](const int &a, const int &b, int &c, int d) {
                 std::unique_lock<ipc::core::shm_instance> lock(shm1);
                 tmp *tmp_ptr = shm1.get<tmp>();
                 char buff[1024];
@@ -100,19 +99,25 @@ int main() {
                 }
                 msgqueue1.send("hello world", sizeof("hello world"));
 
-                std::cout << "i = " << i << ", a = " << tmp_ptr->a << ", b = " << tmp_ptr->b << std::endl;
+                std::cout << "a = " << a << ", b = " << b << ", c = " << c << ", d = " << d << std::endl;
+                std::cout << "tmp_ptr->a = " << tmp_ptr->a << "tmp_ptr->b = " << tmp_ptr->b << std::endl;
+                std::cout << "\n";
                 tmp_ptr->a++;
                 tmp_ptr->b = tmp_ptr->a + 1;
                 using namespace std::chrono_literals;
                 std::this_thread::sleep_for(500ms);
             },
-            nullptr,
-            i);
+            std::function<void()>(nullptr),
+            (int)i, i, i, (int)i);
     }
 
-    wk->add_task(task_handle, nullptr, ipc::core::message::create("", "", "hello task"));
-    // wk->add_task(&classA::function1, nullptr, &a, ipc::core::message::create("", "", "hello task"));
+    std::function<void(const char *, int &)> fnc = [](const char *str, int &a) {
+        std::cout << "task std::function str" << str << ", a: " << a << std::endl;
+    };
 
+    int b = 0;
+    wk->add_task(fnc, nullptr, "str", b);
+    wk->add_task(task_handle, nullptr, ipc::core::message::create("", "", "hello task"));
     wk->start();
     wk->wait();
     bool done = wk->wait_for(1000);
@@ -121,7 +126,7 @@ int main() {
     // shm1.destroy();
 
     ipc::core::message_args<int, int, std::string> args;
-    args << 1 << 2 << "hello world";
+    args << 1 << 2 << "hello world\n";
 
     ipc::core::worker_ptr worker_ptr = ipc::core::worker_man::get_instance().create_worker();
     worker_ptr->add_task(
@@ -140,7 +145,9 @@ int main() {
     ipc::core::message_ptr msg2 = ipc::core::message::create("sender2", "receiver2", "content2");
     ipc::core::evloop_man::get_instance().post_event(el2, std::move(msg2));
 
-    ipc::core::evloop_man::get_instance().post_event(el2, "sender3", "receiver3", 10, 100.0);
+    for (int i = 0; i < 100; i++) {
+        ipc::core::evloop_man::get_instance().post_event(el2, std::string("sender ").append(std::to_string(i)), "receiver3", (int)i, 10.0);
+    }
 
     try {
         ipc_throw_exception("Hello world %s, %d", "fjd", 10);
