@@ -38,7 +38,6 @@ public:
     virtual int stop() = 0;
     virtual void set_handle(handle_w_ptr handle) = 0;
     virtual const worker_base *worker() const = 0;
-    virtual const mesgqueue *queue() const = 0;
 
     static handle_s_ptr make_handle(evloop::handle handle) {
         return std::make_shared<evloop::handle>(std::move(handle));

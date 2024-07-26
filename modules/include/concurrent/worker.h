@@ -41,8 +41,8 @@ public:
     virtual ~worker();
 
     template <typename F, typename... Args>
-    auto add_task(F &&func, std::function<void()> callback, Args &&...args) {
-        auto new_task = make_task(std::forward<F>(func), std::move(callback), std::forward<Args>(args)...);
+    auto add_task(F func, std::function<void()> callback, Args &&...args) {
+        auto new_task = make_task(std::move(func), std::move(callback), std::forward<Args>(args)...);
         add_task(new_task);
         return std::move(new_task);
     }
@@ -55,8 +55,8 @@ public:
     }
 
     template <typename F, typename... Args>
-    auto add_nocallback_task(F &&func, Args &&...args) {
-        auto new_task = make_task(std::forward<F>(func), std::function<void()>(nullptr), std::forward<Args>(args)...);
+    auto add_nocallback_task(F func, Args &&...args) {
+        auto new_task = make_task(std::move(func), std::function<void()>(nullptr), std::forward<Args>(args)...);
         add_task(new_task);
         return std::move(new_task);
     }

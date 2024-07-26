@@ -17,7 +17,6 @@ public:
     int stop() override;
     void set_handle(evloop::handle_w_ptr handle) override;
     const worker_base *worker() const override;
-    const mesgqueue *queue() const override;
 
 private:
     void post(message_ptr mesg);
@@ -29,7 +28,6 @@ private:
     int m_state = 0;
     evloop::handle_w_ptr m_handle_ptr = {};
     worker_ptr m_worker = nullptr;
-    std::shared_ptr<mesgqueue_p> m_mesgqueue = nullptr;
     std::function<void()> m_task_commpleted_cb = {nullptr};
 };
 } // namespace ipc::core

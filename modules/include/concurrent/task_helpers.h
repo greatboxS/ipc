@@ -69,10 +69,10 @@ template <typename F>
 using function_args_tuple = typename function_traits<F>::args_tuple;
 
 template <typename F, typename... Args>
-auto make_task(F &&func, std::function<void()> callback, Args &&...args) {
+auto make_task(F func, std::function<void()> callback, Args &&...args) {
     using ResultType = decltype(func(std::declval<Args>()...));
     using TaskType = task<ResultType, Args...>;
-    return std::make_shared<TaskType>(std::forward<F>(func), std::move(callback), std::forward<Args>(args)...);
+    return std::make_shared<TaskType>(std::move(func), std::move(callback), std::forward<Args>(args)...);
 }
 
 template <typename R, typename... Args>

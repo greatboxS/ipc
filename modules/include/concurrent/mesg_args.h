@@ -1,7 +1,6 @@
 #ifndef MESG_ARGS_H
 #define MESG_ARGS_H
 
-
 #include <iostream>
 #include <sstream>
 #include <tuple>

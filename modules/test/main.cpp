@@ -27,11 +27,13 @@ public:
                 ipc::core::message_args<int *, double> args(x->data(), x->size());
                 if (args.data().has_value()) {
                     auto tp = args.data().get();
-                    std::cout << "args: <int> = " << *std::get<int*>(tp) << " <double> = " << std::get<double>(tp) << std::endl;
+                    std::cout << "args: <int> = " << *std::get<int *>(tp) << " <double> = " << std::get<double>(tp) << std::endl;
                 }
             }
         } catch (...) {
         }
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100ms);
     }
 
     ipc::core::evloop::handle_s_ptr handle1;
@@ -111,12 +113,17 @@ int main() {
             (int)i, i, i, (int)i);
     }
 
-    std::function<void(const char *, int &)> fnc = [](const char *str, int &a) {
+    std::function<void(const char *, const int &)> fnc = [](const char *str, const int &a) {
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(500ms);
         std::cout << "task std::function str" << str << ", a: " << a << std::endl;
     };
 
     int b = 0;
-    wk->add_task(fnc, nullptr, "str", b);
+    wk->add_task<decltype(fnc), const char *, const int &>(fnc, nullptr, "str111", b);
+    wk->add_task(fnc, nullptr, "str222", (int)b);
+    b = 10;
+
     wk->add_task(task_handle, nullptr, ipc::core::message::create("", "", "hello task"));
     wk->start();
     wk->wait();
@@ -139,11 +146,11 @@ int main() {
     el1->start();
     el2->start();
 
-    ipc::core::message_ptr msg1 = ipc::core::message::create("sender1", "receiver1", "content1");
-    ipc::core::evloop_man::get_instance().post_event(el1, std::move(msg1));
+    // ipc::core::message_ptr msg1 = ipc::core::message::create("sender1", "receiver1", "content1");
+    // ipc::core::evloop_man::get_instance().post_event(el1, std::move(msg1));
 
-    ipc::core::message_ptr msg2 = ipc::core::message::create("sender2", "receiver2", "content2");
-    ipc::core::evloop_man::get_instance().post_event(el2, std::move(msg2));
+    // ipc::core::message_ptr msg2 = ipc::core::message::create("sender2", "receiver2", "content2");
+    // ipc::core::evloop_man::get_instance().post_event(el2, std::move(msg2));
 
     for (i = 0; i < 100; i++) {
         ipc::core::evloop_man::get_instance().post_event(el2, std::string("sender ").append(std::to_string(i)), "receiver3", &i, 10.0);
@@ -163,7 +170,7 @@ int main() {
 
     // throw 1;
 
-    std::this_thread::sleep_for(2000ms);
+    std::this_thread::sleep_for(5000ms);
 
     return 0;
 }

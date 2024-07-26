@@ -26,8 +26,8 @@ public:
     using callback_fnc = std::function<void()>;
 
     template <typename F>
-    task(F &&func, callback_fnc callback, Args &&...args) :
-        m_func(std::forward<F>(func)),
+    task(F func, callback_fnc callback, Args &&...args) :
+        m_func(std::move(func)),
         m_callback(std::move(callback)),
         m_done(false),
         m_args(std::forward<Args>(args)...),
@@ -107,8 +107,8 @@ public:
     using callback_fnc = std::function<void()>;
 
     template <typename F>
-    task(F &&func, callback_fnc callback, Args &&...args) :
-        m_func(std::forward<F>(func)),
+    task(F func, callback_fnc callback, Args &&...args) :
+        m_func(std::move(func)),
         m_callback(std::move(callback)),
         m_done(false),
         m_args(std::forward<Args>(args)...),
