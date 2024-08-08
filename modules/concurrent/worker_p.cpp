@@ -43,17 +43,12 @@ public:
         if (state() != static_cast<int>(worker::Finalized)) {
             quit();
         }
-        if (std::this_thread::get_id() == m_worker_thread->get_id()) {
-            m_worker_thread->detach();
-            fprintf(stderr, "detach");
-        } else {
-            if (m_worker_thread != nullptr) {
-                if (m_worker_thread->joinable() == true) {
-                    m_worker_thread->join();
-                }
-                delete m_worker_thread;
-                m_worker_thread = nullptr;
+        if (m_worker_thread != nullptr) {
+            if (m_worker_thread->joinable() == true) {
+                m_worker_thread->join();
             }
+            delete m_worker_thread;
+            m_worker_thread = nullptr;
         }
     }
 
