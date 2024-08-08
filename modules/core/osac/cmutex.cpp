@@ -8,7 +8,6 @@ namespace ipc::core {
  *
  */
 cmutex::cmutex() :
-    m_strMtxName(NULL),
     m_s32IsOpen(-1) {}
 
 /**
@@ -16,8 +15,6 @@ cmutex::cmutex() :
  *
  */
 cmutex::~cmutex() {
-    if (m_strMtxName) delete[] m_strMtxName;
-    destroy();
 }
 
 /**
@@ -29,13 +26,6 @@ cmutex::~cmutex() {
  * @return int
  */
 int cmutex::create(const char *name, unsigned int recursive) {
-    int len = 0;
-    if (name) {
-        len = strlen(name);
-        m_strMtxName = new char[len];
-        strncpy(m_strMtxName, name, len);
-    }
-
     m_s32IsOpen = mutex_create(m_stMtx, name, recursive);
     return m_s32IsOpen;
 }

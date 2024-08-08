@@ -73,7 +73,9 @@ int shared_mem_create(SHM_T &shm, const char *name, size_t size) {
 
     GENERATE_SHM_NAME(name);
     int ret = shared_mem_open(shm, name, size);
-    if (ret == RET_OK) return RET_OK;
+    if (ret == RET_OK) return {
+        RET_OK;
+    }
 
     if (__ERROR__ == ERROR_FILE_NOT_FOUND) {
         if ((handle = CreateFileMappingA(INVALID_HANDLE_VALUE, &sa, PAGE_READWRITE, 0, size, genName)) == NULL) {

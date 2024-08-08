@@ -12,6 +12,10 @@ set(INF_DIRS "${CMAKE_INSTALL_INCLUDEDIR}/debuger")
 
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 
+if (${PLATFORM} MATCHES "linux")
+    target_link_libraries(${PROJECT_NAME} PRIVATE dl)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${INC_DIRS}>"
                                                   "$<INSTALL_INTERFACE:${INF_DIRS}>")
 

@@ -4,8 +4,10 @@
 #include <string.h>
 
 namespace ipc::core {
-#define RETURN_IF_NOT_VALID_HANDLE(handle) \
-    if (handle == (HANDLE)NULL || handle == (HANDLE) - 1) return RET_ERR;
+#define RETURN_IF_NOT_VALID_HANDLE(handle)                  \
+    if (handle == (HANDLE)NULL || handle == (HANDLE) - 1) { \
+        return RET_ERR;                                     \
+    }
 
 #define GENERATE_MUTEX_NAME(from)        \
     char genName[MTX_NAME_SIZE + 4];     \
@@ -69,10 +71,12 @@ int mutex_create(MUTEX_T &mtx, const char *name, unsigned int recursive) {
 int mutex_lock(MUTEX_T &mtx, TIME_T timeout) {
     int ret = 0;
     RETURN_IF_NOT_VALID_HANDLE(mtx.lock);
-    if (timeout > 0)
+    if (timeout > 0) {
         ret = WaitForSingleObject(mtx.lock, timeout);
-    else
+    }
+    else {
         ret = WaitForSingleObject(mtx.lock, INFINITE);
+    }
 
     if (ret != WAIT_OBJECT_0) {
         OSAL_ERR("[%s] failed, %s\n", __FUNCTION__, __ERROR_STR__);

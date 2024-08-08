@@ -7,8 +7,7 @@ namespace ipc::core {
 class __dll_declspec__ cmutex {
 private:
     MUTEX_T m_stMtx;
-    char *m_strMtxName;
-    int32_t m_s32IsOpen;
+    int32_t m_s32IsOpen = 0;
 
 public:
     cmutex();

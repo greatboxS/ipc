@@ -70,7 +70,9 @@ inline __dll_declspec__ T mutex_safe_read(T &obj, MUTEX_T &mtx, int *exp = NULL)
     } else {
         ret = obj;
     }
-    if (exp) *exp = err;
+    if (exp) {
+        *exp = err;
+    }
     return ret;
 }
 
@@ -89,7 +91,9 @@ inline __dll_declspec__ void mutex_safe_write(T &obj, MUTEX_T &mtx, T val, int *
         obj = val;
         mutex_unlock(mtx);
     }
-    if (exp) *exp = err;
+    if (exp) {
+        *exp = err;
+    }
 }
 }
 #endif // IPC_MUTEX_H

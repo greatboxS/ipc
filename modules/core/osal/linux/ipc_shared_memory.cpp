@@ -73,7 +73,7 @@ int shared_mem_create(SHM_T &shm, const char *name, size_t size) {
     int fd = 0;
 
     GENERATE_SHM_NAME(name);
-    fd = shm_open(genName, O_CREAT, SHM_MODE);
+    fd = shm_open(genName, O_CREAT | O_EXCL, SHM_MODE);
     if (fd < 0) {
         OSAL_ERR("[%s] shm_open() failed, %s\n", __FUNCTION__, __ERROR_STR__);
         return fd;
@@ -94,7 +94,9 @@ int shared_mem_create(SHM_T &shm, const char *name, size_t size) {
  */
 int shared_mem_close(SHM_T &shm) {
     int ret = close(shm.handle);
-    if (ret == RET_OK) return RET_OK;
+    if (ret == RET_OK) {
+        return RET_OK;
+    }
 
     OSAL_INFO("[%s] Close shared memory file descriptor %d failed, %s\n", __FUNCTION__, shm.handle, __ERROR_STR__);
     return ret;
@@ -114,7 +116,9 @@ int shared_mem_destroy(SHM_T &shm) {
     }
     GENERATE_SHM_NAME(shm.name);
     ret = shm_unlink(genName);
-    if (ret == RET_OK) return RET_OK;
+    if (ret == RET_OK) {
+        return RET_OK;
+    }
 
     OSAL_INFO("[%s] Unlink shared memory %s failed, %s\n", __FUNCTION__, genName, __ERROR_STR__);
     return ret;

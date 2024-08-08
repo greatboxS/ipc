@@ -27,20 +27,20 @@ shm_instance::shm_instance(const std::string &name, size_t size) :
 shm_instance::~shm_instance() {
 }
 
-int shm_instance::create() {
-    return m_impl->create();
+bool shm_instance::create() {
+    return (m_impl->create() > -1);
 }
-int shm_instance::destroy() {
-    return m_impl->destroy();
+void shm_instance::destroy() {
+    (void)m_impl->destroy();
 }
-int shm_instance::open() {
-    return m_impl->open();
+bool shm_instance::open() {
+    return (m_impl->open() > -1);
 }
-int shm_instance::close() {
-    return m_impl->close();
+void shm_instance::close() {
+    (void)m_impl->close();
 }
-int shm_instance::opened() const {
-    return m_impl->opened();
+bool shm_instance::opened() const {
+    return (m_impl->opened() != 0);
 }
 
 void shm_instance::lock() {

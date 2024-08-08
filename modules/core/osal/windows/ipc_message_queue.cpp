@@ -65,7 +65,9 @@ int mesgqueue_open(MSGQ_T &msgq, const char *name) {
         return RET_ERR;
     }
 
-    if (semaphore_wait(sem) != RET_OK) return RET_ERR;
+    if (semaphore_wait(sem) != RET_OK) {
+        return RET_ERR;
+    }
 
     if (mutex_lock(mtx) != RET_OK) {
         semaphore_post(sem);
@@ -162,7 +164,9 @@ int mesgqueue_create(MSGQ_T &msgq, const char *name, size_t msgsize, size_t msgc
  */
 int mesgqueue_receive(MSGQ_T &msgq, char *buff, size_t size) {
     int ret = semaphore_wait(msgq.sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(msgq.mtx);
     if (ret != RET_OK) {
         semaphore_post(msgq.sem);
@@ -187,7 +191,9 @@ int mesgqueue_receive(MSGQ_T &msgq, char *buff, size_t size) {
  */
 int mesgqueue_send(MSGQ_T &msgq, const char *buff, size_t size) {
     int ret = semaphore_wait(msgq.sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(msgq.mtx);
     if (ret != RET_OK) {
         semaphore_post(msgq.sem);
@@ -209,7 +215,9 @@ int mesgqueue_send(MSGQ_T &msgq, const char *buff, size_t size) {
  */
 int mesgqueue_get_current_size(MSGQ_T &msgq) {
     int ret = semaphore_wait(msgq.sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(msgq.mtx);
     if (ret != RET_OK) {
         semaphore_post(msgq.sem);

@@ -36,7 +36,9 @@ static int SEM_Init(SEM_T &sem, int value) {
     sem.handle = new sem_t;
     if (sem.handle != nullptr) {
         ret = sem_init(sem.handle, SEM_PSHARED, value);
-        if (ret == RET_OK) return RET_OK;
+        if (ret == RET_OK) {
+            return RET_OK;
+        }
 
         OSAL_ERR("[%s] sem_init() failed, %s\n", __FUNCTION__, __ERROR_STR__);
     }
@@ -52,7 +54,9 @@ static int SEM_Init(SEM_T &sem, int value) {
  * @return int
  */
 int semaphore_open(SEM_T &sem, const char *name) {
-    if (!name) return RET_ERR;
+    if (!name) {
+        return RET_ERR;
+    }
     GENERATE_SEM_NAME(name);
     sem_t *se = sem_open(genName, O_RDWR);
     if (se == SEM_FAILED) {
@@ -105,7 +109,9 @@ int semaphore_create(SEM_T &sem, int value, const char *name) {
  */
 int semaphore_wait(SEM_T &sem) {
     int ret = sem_wait(sem.handle);
-    if (ret == RET_OK) return RET_OK;
+    if (ret == RET_OK) {
+        return RET_OK;
+    }
 
     OSAL_ERR("[%s] sem_wait() failed, %s\n", __FUNCTION__, __ERROR_STR__);
     return ret;
@@ -120,7 +126,9 @@ int semaphore_wait(SEM_T &sem) {
  */
 int semaphore_post(SEM_T &sem) {
     int ret = sem_post(sem.handle);
-    if (ret == RET_OK) return RET_OK;
+    if (ret == RET_OK) {
+        return RET_OK;
+    }
 
     OSAL_ERR("[%s] sem_post() failed, %s\n", __FUNCTION__, __ERROR_STR__);
     return ret;
@@ -135,7 +143,9 @@ int semaphore_post(SEM_T &sem) {
  */
 int semaphore_value(SEM_T &sem) {
     int value = 0;
-    if (sem_getvalue(sem.handle, &value) == RET_OK) return value;
+    if (sem_getvalue(sem.handle, &value) == RET_OK) {
+        return value;
+    }
 
     OSAL_ERR("[%s] sem_getvalue() failed, %s\n", __FUNCTION__, __ERROR_STR__);
     return RET_ERR;
@@ -149,8 +159,12 @@ int semaphore_value(SEM_T &sem) {
  * @return int      0 if success, otherwise -1
  */
 int semaphore_close(SEM_T &sem) {
-    if (strlen(sem.name) == RET_OK) return RET_ERR;
-    if (sem_close(sem.handle) == RET_OK) return RET_OK;
+    if (strlen(sem.name) == RET_OK) {
+        return RET_ERR;
+    }
+    if (sem_close(sem.handle) == RET_OK) {
+        return RET_OK;
+    }
 
     OSAL_ERR("[%s] sem_close() failed, %s\n", __FUNCTION__, __ERROR_STR__);
     return RET_ERR;
@@ -175,7 +189,9 @@ int semaphore_destroy(SEM_T &sem) {
     }
 
     GENERATE_SEM_NAME(sem.name);
-    if (sem_unlink(genName) == RET_OK) return RET_OK;
+    if (sem_unlink(genName) == RET_OK) {
+        return RET_OK;
+    }
 
     OSAL_ERR("[%s] sem_unlink() failed, %s\n", __FUNCTION__, __ERROR_STR__);
     return RET_ERR;

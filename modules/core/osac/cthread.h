@@ -56,7 +56,9 @@ private:
     static TASK_RET handle(VOID_T param);
     void wrap() {
         run();
-        if (m_pCallback) m_pCallback(m_pParam);
+        if (m_pCallback) {
+            m_pCallback(m_pParam);
+        }
     }
 
 public:

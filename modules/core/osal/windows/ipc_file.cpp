@@ -8,8 +8,9 @@ int file_exist(const char *file) {
 
 int file_is_directory(const char *file) {
     DWORD dwAttrib = GetFileAttributesA(file);
-    if (dwAttrib & FILE_ATTRIBUTE_DIRECTORY)
+    if (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) {
         return 1;
+    }
     return RET_OK;
 }
 } // namespace ipc::core

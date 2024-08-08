@@ -37,7 +37,7 @@ class worker : public worker_base {
     std::unique_ptr<impl> m_impl{nullptr};
 
 public:
-    worker();
+    worker(std::initializer_list<task_base_ptr> task_list = {});
     virtual ~worker();
 
     template <typename F, typename... Args>
@@ -61,6 +61,8 @@ public:
         return std::move(new_task);
     }
 
+    void add_task(task_base_ptr task);
+
     int state() const override;
     void start() override;
     void stop() override;
@@ -69,9 +71,6 @@ public:
     void quit() override;
     size_t task_count() const override;
     void assign_to(int cpu) override;
-
-private:
-    void add_task(task_base_ptr task);
 };
 
 using worker_ptr = std::shared_ptr<worker>;

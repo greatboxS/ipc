@@ -11,7 +11,9 @@ ctimer::ctimer(int interval, TIMER_Callback fnc, void *param, int start) {
 
 void ctimer::timer_callback(void *param) {
     ctimer *timer = static_cast<ctimer *>(param);
-    if (timer->m_pFnc) timer->m_pFnc(timer->m_pParam);
+    if (timer->m_pFnc) {
+        timer->m_pFnc(timer->m_pParam);
+    }
     timer->timer_elapsed(timer->m_stTimer.param);
 }
 

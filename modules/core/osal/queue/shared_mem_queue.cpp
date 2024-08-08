@@ -70,7 +70,9 @@ shared_mem_queue::shared_mem_queue(void *virt, size_t mesgsize, size_t mesgcount
  *
  */
 int shared_mem_queue::push_back(const char *buff, size_t _size) {
-    if (!is_initialized()) return -1;
+    if (!is_initialized()) {
+        return -1;
+    }
     if (full()) {
         OSAL_ERR("Buffer is full, %zd\n", size());
         return -2;
@@ -107,7 +109,9 @@ int shared_mem_queue::push_back(const char *buff, size_t _size) {
  *
  */
 int shared_mem_queue::push_front(const char *buff, size_t _size) {
-    if (!is_initialized()) return -1;
+    if (!is_initialized()) {
+        return -1;
+    }
     if (full()) {
         OSAL_ERR("Buffer is full, %zu\n", size());
         return -2;
@@ -151,13 +155,18 @@ int shared_mem_queue::push_front(const char *buff, size_t _size) {
  *
  */
 void *shared_mem_queue::front(size_t *size) {
-    if (!is_initialized()) return nullptr;
-    if (empty()) return nullptr;
+    if (!is_initialized()) {
+        return nullptr;
+    }
+    if (empty()) {
+        return nullptr;
+    }
 
     int ret = 0;
     BufferNode_t *node = &m_pstBufferNodes[m_pstQueueHeader->s32RIndex];
-    if (size)
+    if (size) {
         *size = *(node->pu32Size);
+    }
     return node->pAddr;
 }
 
@@ -170,14 +179,19 @@ void *shared_mem_queue::front(size_t *size) {
  *
  */
 void *shared_mem_queue::back(size_t *size) {
-    if (!is_initialized()) return nullptr;
-    if (empty()) return nullptr;
+    if (!is_initialized()) {
+        return nullptr;
+    }
+    if (empty()) {
+        return nullptr;
+    }
 
     int ret = 0;
     int index = (m_pstQueueHeader->s32WIndex > 0 ? m_pstQueueHeader->s32WIndex : (m_pstQueueHeader->u32Msgcount - 1));
     BufferNode_t *node = &m_pstBufferNodes[index];
-    if (size)
+    if (size) {
         *size = *(node->pu32Size);
+    }
     return node->pAddr;
 }
 
@@ -214,8 +228,12 @@ int shared_mem_queue::front(char *buff, size_t size) {
  *
  */
 int shared_mem_queue::pop() {
-    if (!is_initialized()) return -1;
-    if (empty()) return -2;
+    if (!is_initialized()) {
+        return -1;
+    }
+    if (empty()) {
+        return -2;
+    }
     m_pstQueueHeader->s32Full = 0;
     m_pstQueueHeader->s32RIndex = (++m_pstQueueHeader->s32RIndex) % m_pstQueueHeader->u32Msgcount;
     return 0;

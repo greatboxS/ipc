@@ -50,14 +50,11 @@ class csecured_shared_mem::impl {
 
             if (mutex_create(m_mtx, m_name.c_str()) < 0) {
                 OSAC_ERR("Failed to create mutex\n");
-                semaphore_destroy(m_sem);
                 break;
             }
 
             if (shared_mem_create(m_shm, m_name.c_str(), m_size) < 0) {
                 OSAC_ERR("Failed to create share-memory\n");
-                semaphore_destroy(m_sem);
-                mutex_destroy(m_mtx);
                 break;
             }
             m_is_created.store(true);
@@ -97,14 +94,11 @@ class csecured_shared_mem::impl {
 
             if (mutex_create(m_mtx, m_name.c_str()) < 0) {
                 OSAC_ERR("Failed to open mutex\n");
-                semaphore_close(m_sem);
                 break;
             }
 
             if (shared_mem_open(m_shm, m_name.c_str(), m_size) < 0) {
                 OSAC_ERR("Failed to create share-memory\n");
-                semaphore_close(m_sem);
-                mutex_destroy(m_mtx);
                 break;
             }
             m_is_opened.store(true);

@@ -18,11 +18,25 @@ public:
     explicit shm_instance(const std::string &name, size_t size);
     ~shm_instance();
 
-    int create();
-    int destroy();
-    int open();
-    int close();
-    int opened() const;
+    /**
+     * @fn create()
+     * @brief 
+     * 
+     * @return true - success 
+     * @return false - fail
+     */
+    bool create();
+    void destroy();
+    /**
+     * @fn open()
+     * @brief 
+     * 
+     * @return true - sucess 
+     * @return false - fail
+     */
+    bool open();
+    void close();
+    bool opened() const;
 
     void lock();
     void unlock();

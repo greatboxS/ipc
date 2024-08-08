@@ -71,7 +71,7 @@ int mesgqueue_open(MSGQ_T &msgq, const char *name) {
         return RET_ERR;
     }
 
-    if (shared_mem_open(msgq.shm, genName, QUEUE_BUFF_OFFSET) != RET_OK) {
+    if (shared_mem_open(msgq.shm, genName, QUEUE_BUFF_OFFSET) < 0) {
         OSAL_ERR("%s: Open shared memory %s failed\n", __FUNCTION__, name);
         semaphore_close(sem);
         mutex_destroy(mtx);
@@ -79,7 +79,9 @@ int mesgqueue_open(MSGQ_T &msgq, const char *name) {
     }
 
     ret = semaphore_wait(sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(mtx);
     if (ret != RET_OK) {
         semaphore_post(sem);
@@ -91,7 +93,7 @@ int mesgqueue_open(MSGQ_T &msgq, const char *name) {
     shared_mem_close(msgq.shm);
     shared_mem_destroy(msgq.shm);
 
-    if (shared_mem_open(msgq.shm, genName, size) != RET_OK) {
+    if (shared_mem_open(msgq.shm, genName, size) < 0) {
         OSAL_ERR("mesgqueue_open: Open shared memory %s failed\n", name);
         ret = RET_ERR;
     }
@@ -174,12 +176,14 @@ int mesgqueue_create(MSGQ_T &msgq, const char *name, size_t msgsize, size_t msgc
         return RET_ERR;
     }
 
-    if (shared_mem_create(msgq.shm, genName, size) != RET_OK) {
-        OSAL_ERR("%s: shared_mem_create %s failed\n", __FUNCTION__, name);
-        semaphore_close(sem);
-        semaphore_destroy(sem);
-        mutex_destroy(mtx);
-        return RET_ERR;
+    if (shared_mem_create(msgq.shm, genName, size) < 0) {
+        if (shared_mem_open(msgq.shm, genName, size) < 0) {
+            OSAL_ERR("%s: shared_mem_create %s failed\n", __FUNCTION__, name);
+            semaphore_close(sem);
+            semaphore_destroy(sem);
+            mutex_destroy(mtx);
+            return RET_ERR;
+        }
     }
 
     msgq.msgsize = msgsize;
@@ -227,7 +231,9 @@ int mesgqueue_receive(MSGQ_T &msgq, char *buff, size_t size) {
     }
 #ifdef SHARED_MEMORY_MESSAGE_QUEUE
     int ret = semaphore_wait(msgq.sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(msgq.mtx);
     if (ret != RET_OK) {
         semaphore_post(msgq.sem);
@@ -260,7 +266,9 @@ int mesgqueue_send(MSGQ_T &msgq, const char *buff, size_t size) {
     }
 #ifdef SHARED_MEMORY_MESSAGE_QUEUE
     int ret = semaphore_wait(msgq.sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(msgq.mtx);
     if (ret != RET_OK) {
         semaphore_post(msgq.sem);
@@ -286,7 +294,9 @@ int mesgqueue_send(MSGQ_T &msgq, const char *buff, size_t size) {
 int mesgqueue_get_current_size(MSGQ_T &msgq) {
 #ifdef SHARED_MEMORY_MESSAGE_QUEUE
     int ret = semaphore_wait(msgq.sem);
-    if (ret != RET_OK) return RET_ERR;
+    if (ret != RET_OK) {
+        return RET_ERR;
+    }
     ret = mutex_lock(msgq.mtx);
     if (ret != RET_OK) {
         semaphore_post(msgq.sem);

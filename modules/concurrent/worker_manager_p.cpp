@@ -9,6 +9,12 @@ public:
     }
     ~impl() {
         for (auto weak_ptr_worker : m_worker_pool) {
+            if (weak_ptr_worker.lock() != nullptr) {
+                auto ptr = weak_ptr_worker.lock().get();
+                if (ptr->task_count() > 0) {
+                    ptr->quit();
+                }
+            }
         }
     }
     worker_ptr create_worker() {

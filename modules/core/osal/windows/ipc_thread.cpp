@@ -50,8 +50,9 @@ int thread_create(THREAD_T &threadInfo, const char *name, THREAD_FunctionCall fn
     threadInfo.core = core;
     threadInfo.priority = priority;
     threadInfo.fnc = fnc;
-    if (name)
+    if (name) {
         strncpy(threadInfo.name, name, sizeof(threadInfo.name));
+    }
     return RET_OK;
 }
 

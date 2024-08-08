@@ -49,11 +49,15 @@ static TASK_RET timer_run(TASK_ARG param) {
 
         mutex_lock(timer_manager.mtx);
         for (timer_wrap_t &wrapper : timer_manager.timers) {
-            if (!wrapper.start) continue;
+            if (!wrapper.start) {
+                continue;
+            }
             wrapper.tick++;
             if (wrapper.tick >= wrapper.timer.interval) {
                 wrapper.tick = 0;
-                if (wrapper.timer.fnc) wrapper.timer.fnc(wrapper.timer.param);
+                if (wrapper.timer.fnc) {
+                    wrapper.timer.fnc(wrapper.timer.param);
+                }
             }
         }
         mutex_unlock(timer_manager.mtx);
@@ -96,10 +100,12 @@ TIMER_T timer_create(int interval, TIMER_Callback fnc, void *param, const char *
     memset(&wrapper, 0, sizeof(wrapper));
 
     if (timer_initialized == 0) {
-        if (timer_initialize() < 0)
+        if (timer_initialize() < 0) {
             return wrapper.timer;
-        else
+        }
+        else {
             timer_initialized = 1;
+        }
     }
 
     if (interval <= 0 || !fnc) {
@@ -113,7 +119,9 @@ TIMER_T timer_create(int interval, TIMER_Callback fnc, void *param, const char *
     wrapper.timer.param = param;
     wrapper.timer.id = ++timer_index;
 
-    if (name) strncpy(wrapper.timer.name, name, sizeof(wrapper.timer.name));
+    if (name) {
+        strncpy(wrapper.timer.name, name, sizeof(wrapper.timer.name));
+    }
 
     mutex_lock(timer_manager.mtx);
     timer_manager.timers.push_back(wrapper);

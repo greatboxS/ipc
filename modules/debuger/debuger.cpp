@@ -136,8 +136,9 @@ static void backtrace_print_line(FILE *stream, int level, const char *symbol, ui
         backtrace_line_out->append("]");
     }
     if (file) {
-        if (lineValid)
+        if (lineValid) {
             backtrace_line_out->append(std::to_string(lineValid ? line : 0));
+        }
 
         backtrace_line_out->append(" in ");
         static const char *filePrefix =
@@ -148,8 +149,9 @@ static void backtrace_print_line(FILE *stream, int level, const char *symbol, ui
 #endif
 
         bool isFileUrl = (strncmp(file, filePrefix, sizeof(filePrefix) - 1) == 0);
-        if (!isFileUrl)
+        if (!isFileUrl) {
             backtrace_line_out->append(filePrefix);
+        }
         backtrace_line_out->append((isFileUrl) ? file + sizeof(filePrefix) - 1 : file);
 
         if (lineValid) {
@@ -277,10 +279,14 @@ static void log_crash_info(FILE *stream, const char *why, int stackFramesToIgnor
     pthread_t pthread_id = pthread_self();
     char thread_name[128];
 
-    if (is_main_thread)
+    if (is_main_thread) {
         strcpy(thread_name, "main");
-    else if (pthread_getname_np(pthread_id, thread_name, sizeof(thread_name)))
+    }
+    else if (pthread_getname_np(pthread_id, thread_name, sizeof(thread_name))) {
         strcpy(thread_name, "unknown");
+    } else {
+        // Do nothing
+    }
 
     fprintf(stream, "\n*** process %s (%d) crashed ***", cmdLine.c_str(), pid);
     fprintf(stream, "\n > why: %s", why);
@@ -304,12 +310,15 @@ static void log_crash_info(FILE *stream, const char *why, int stackFramesToIgnor
                 char *end = nullptr;
 
                 for (char *ptr = symbols[i]; ptr && *ptr; ++ptr) {
-                    if (!function && *ptr == '(')
+                    if (!function && *ptr == '(') {
                         function = ptr + 1;
-                    else if (function && !offset && *ptr == '+')
+                    } else if (function && !offset && *ptr == '+') {
                         offset = ptr;
-                    else if (function && !end && *ptr == ')')
+                    } else if (function && !end && *ptr == ')') {
                         end = ptr;
+                    } else {
+                        // Do nothing
+                    }
                 }
 
                 const char *name = nullptr;
@@ -323,8 +332,9 @@ static void log_crash_info(FILE *stream, const char *why, int stackFramesToIgnor
                     name = (status == 0 && *demangle_buff) ? demangle_buff : function;
                 } else {
                     name = symbols[i];
-                    if (function && (function == offset))
+                    if (function && (function == offset)) {
                         *(function - 1) = 0;
+                    }
                 }
                 backtrace_print_line(stream, i, name, offset ? strtoull(offset + 1, nullptr, 16) : 0);
             }
@@ -408,8 +418,9 @@ static void log_crash_info(FILE *stream, const char *why, int stackFramesToIgnor
                     GetProcAddress(::GetModuleHandle(L"kernel32.dll"),
                                    "GetThreadDescription")))) {
             WCHAR *desc = nullptr;
-            if (SUCCEEDED(GetThreadDescriptionFunc(GetCurrentThread(), &desc)))
+            if (SUCCEEDED(GetThreadDescriptionFunc(GetCurrentThread(), &desc))) {
                 wcscpy_s(threadName, sizeof(threadName) / sizeof(*threadName), desc);
+            }
         }
     }
 
@@ -536,8 +547,9 @@ static LONG WINAPI windowsExceptionFilter(EXCEPTION_POINTERS *ep) {
                     auto cta = reinterpret_cast<_s__CatchableTypeArray *>(hInstance + ti->pCatchableTypeArray);
                     if (cta && (cta->nCatchableTypes > 0) && (cta->nCatchableTypes < 100)) {
                         auto ct = reinterpret_cast<_s__CatchableType *>(hInstance + cta->arrayOfCatchableTypes[0]);
-                        if (ct)
+                        if (ct) {
                             type = reinterpret_cast<std::type_info *>(hInstance + ct->pType);
+                        }
                     }
                 }
             }

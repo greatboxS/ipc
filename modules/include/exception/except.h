@@ -26,8 +26,8 @@ private:
 protected:
     explicit except(const char *fnc, int line) noexcept;
     virtual ~except() noexcept;
-    except(const except &other) noexcept = default;
-    except(except &&other) noexcept = default;
+    except(const except &other) = default;
+    except(except &&other) = default;
     void raise(const char *format, ...);
 
 public:

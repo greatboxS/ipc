@@ -36,8 +36,11 @@ const char *DBG_GetClassName(const char *name) {
     size_t len = strlen(name);
     size_t index = 0;
 
-    for (index = 0; index < len; index++)
-        if (!(name[index] >= '0' && name[index] <= '9')) break;
+    for (index = 0; index < len; index++) {
+        if (!(name[index] >= '0' && name[index] <= '9')) {
+            break;
+        }
+    }
 
     return &name[index];
 }

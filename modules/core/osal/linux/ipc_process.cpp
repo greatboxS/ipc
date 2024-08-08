@@ -18,12 +18,15 @@ int process_create(PROCESS_T &process, char *path) {
 
 int process_execute(PROCESS_T &process, const char *argv) {
     pid_t pid = 0;
-    if ((pid = fork()) == 0)
+    if ((pid = fork()) == 0) {
         return system(argv);
-    else if (pid < 0)
+    }
+    else if (pid < 0) {
         return RET_ERR;
-    else
+    }
+    else {
         return RET_OK;
+    }
 }
 
 int process_kill(PROCESS_T &process) {

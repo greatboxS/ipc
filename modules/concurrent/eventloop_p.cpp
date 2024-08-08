@@ -37,7 +37,7 @@ int evloop_p::start() {
 int evloop_p::stop() {
     std::unique_lock<std::shared_mutex> lock(m_mtx);
     m_state = static_cast<int>(state::Stoped);
-    m_worker->stop();
+    m_worker->quit();
     return 0;
 }
 

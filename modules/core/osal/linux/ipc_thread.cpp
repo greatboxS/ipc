@@ -43,11 +43,13 @@ int thread_create(THREAD_T &threadInfo, const char *name, THREAD_FunctionCall fn
            (current_policy == 0 ? "SCHED_OTHER" : (current_policy == 1 ? "SCHED_FIFO" : (current_policy == 2 ? "SCHED_RR" : "UNKNOWN"))),
            min_priority, max_priority);
 
-    if (priority > max_priority)
+    if (priority > max_priority) {
         priority = max_priority;
+    }
 
-    if (priority < min_priority)
+    if (priority < min_priority) {
         priority = min_priority;
+    }
 
     pthread = new pthread_t;
     if (pthread == nullptr) {
@@ -133,8 +135,9 @@ int thread_create(THREAD_T &threadInfo, const char *name, THREAD_FunctionCall fn
 
         OSAL_INFO("[%s] Set returned by pthread_getaffinity_np() contained:\n", __FUNCTION__);
         for (int j = 0; j < CPU_SETSIZE; j++)
-            if (CPU_ISSET(j, &cpuset))
+            if (CPU_ISSET(j, &cpuset)) {
                 OSAL_INFO("[%s]    CPU %d\n", __FUNCTION__, j);
+            }
     }
 
     threadInfo.fnc = fnc;
@@ -217,10 +220,12 @@ int thread_terminate(THREAD_T &threadInfo) {
  * @return int
  */
 int thread_delay(unsigned int ms, unsigned int us) {
-    if (ms)
+    if (ms) {
         usleep(ms * 1000);
-    if (us)
+    }
+    if (us) {
         usleep(us);
+    }
     return RET_OK;
 }
 } // namespace ipc::core
