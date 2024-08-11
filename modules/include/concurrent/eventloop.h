@@ -24,12 +24,6 @@ public:
     using handle_w_ptr = std::weak_ptr<handle>;
     using handle_s_ptr = std::shared_ptr<handle>;
 
-    enum class state {
-        Created,
-        Running,
-        Stoped,
-    };
-
     virtual uint64_t id() const = 0;
     virtual bool is_running() const = 0;
     virtual int start() = 0;

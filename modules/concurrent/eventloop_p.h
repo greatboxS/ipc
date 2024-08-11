@@ -9,6 +9,12 @@ class evloop_p : public evloop {
     friend class evloop_man;
 
 public:
+    enum class state {
+        Created,
+        Running,
+        Stoped,
+    };
+
     evloop_p(uint64_t id);
     virtual ~evloop_p();
     uint64_t id() const override;
