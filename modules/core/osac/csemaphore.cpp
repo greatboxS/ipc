@@ -9,6 +9,8 @@ csemaphore::~csemaphore() {}
 
 int csemaphore::create(int value, const char *name) { return semaphore_create(m_stSem, value, name); }
 
+int csemaphore::open(const char *name) { return semaphore_open(m_stSem, name); }
+
 int csemaphore::wait() { return semaphore_wait(m_stSem); }
 
 int csemaphore::post() { return semaphore_post(m_stSem); }

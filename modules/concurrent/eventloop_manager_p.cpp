@@ -1,30 +1,23 @@
 ﻿#include "eventloop_p.h"
 #include "concurrent/eventloop_manager.h"
+#include "worker_p.h"
+#include "../identify/id_provider.h"
 
 namespace ipc::core {
-
-static uint64_t getId() {
-    static std::atomic<uint64_t> id = 0;
-    id.store(id.load() + 1);
-    return id.load();
-}
 
 class evloop_man::manager_p {
     friend class evloop_man;
 
-    manager_p() {
-    }
-
-    ~manager_p() {
-    }
+    manager_p() {}
+    ~manager_p() {}
 
 public:
     std::shared_ptr<evloop> create_evloop(evloop::handle_w_ptr handle = {}) {
-        std::shared_ptr<evloop_p> loop = std::shared_ptr<evloop_p>(new evloop_p(getId()));
+        std::shared_ptr<evloop_p> loop = std::shared_ptr<evloop_p>(new evloop_p(get_new_id<id_provider_type::EventLoop>()));
 
         if (loop != nullptr) {
             loop->set_handle(handle);
-            std::lock_guard<std::mutex> lock(mtx);
+            std::unique_lock<std::shared_mutex> lock(mtx);
             evloops[loop->id()] = loop;
         }
         return std::move(loop);
@@ -36,15 +29,19 @@ public:
     }
 
     size_t evloop_count() const {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::shared_lock<std::shared_mutex> lock(mtx);
         return evloops.size();
     }
 
     void quit() {
-        std::thread *watcher_thread = new std::thread([this]() {
-            while (true) {
+        std::unique_lock<std::shared_mutex> lock(mtx);
+        for (auto [id, ptr] : evloops) {
+            if (ptr != nullptr) {
+                if (ptr->is_running() == true) {
+                    ptr->stop();
+                }
             }
-        });
+        }
     }
 
     void post_event(int evloop_id, message_ptr mesg) {
@@ -64,10 +61,9 @@ public:
     }
 
 private:
-
     std::shared_ptr<evloop_p> get_evloop_by_id(uint64_t id) {
         std::shared_ptr<evloop_p> loop = std::shared_ptr<evloop_p>(nullptr);
-        std::lock_guard<std::mutex> lock(mtx);
+        std::shared_lock<std::shared_mutex> lock(mtx);
         auto iter = evloops.find(id);
         if (iter != evloops.end()) {
             loop = iter->second;
@@ -75,8 +71,7 @@ private:
         return std::move(loop);
     }
 
-
-    mutable std::mutex mtx = {};
+    mutable std::shared_mutex mtx = {};
     std::unordered_map<uint64_t, std::shared_ptr<evloop_p>> evloops = {};
     std::shared_ptr<worker> m_worker = {nullptr};
 };

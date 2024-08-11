@@ -31,10 +31,10 @@ __DLL_DECLSPEC__ extern const char *GetLastErrorStr();
 
 #if defined(OSAL_DEBUG)
 #define OSAL_INFO printf
-#define OSAL_ERR printf
+#define OSAL_ERR(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define OSAL_INFO
-#define OSAL_ERR 
+#define OSAL_ERR(...)
 
 #endif
 

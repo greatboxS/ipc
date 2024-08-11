@@ -1,4 +1,3 @@
-#include "concurrent/worker.h"
 #include <queue>
 #include <memory>
 #include <thread>
@@ -8,86 +7,84 @@
 #include <atomic>
 #include <vector>
 #include <iostream>
+#include "worker_p.h"
+#include "../identify/id_provider.h"
 
 #ifdef __linux__
 #include <pthread.h>
+#include <unistd.h>
 #endif
 
 namespace ipc::core {
 
-class worker::impl {
-    friend class worker;
+static constexpr int WK_WAIT_TIMEOUT = 10000;
 
+class worker_p::impl {
+    friend class worker_p;
+
+    int m_id = 0;
     worker_state m_state = worker::Idle;
-    std::thread *m_worker_thread = nullptr;
+    std::thread m_worker_thread = {};
     std::queue<task_base_ptr> m_task_queue = {};
     mutable std::mutex m_task_queue_mtx = {};
     std::condition_variable m_condition = {};
-    bool m_done = false;
-    std::mutex m_done_mtx = {};
-    std::condition_variable m_done_condition = {};
+    bool m_joined = false;
 
 public:
-    impl(std::initializer_list<task_base_ptr> task_list) :
+    impl(std::initializer_list<task_base_ptr> task_list, int id) :
+        m_id(id),
         m_state(worker::Idle),
-        m_worker_thread(new(std::nothrow) std::thread(&impl::run, this)),
+        m_worker_thread(std::thread(&impl::run, this)),
         m_task_queue{task_list},
         m_task_queue_mtx{},
         m_condition{},
-        m_done(false),
-        m_done_mtx{},
-        m_done_condition{} {
+        m_joined(false) {
     }
 
-    ~impl() {
-        if (state() != static_cast<int>(worker::Finalized)) {
-            quit();
-        }
-        if (m_worker_thread != nullptr) {
-            if (m_worker_thread->joinable() == true) {
-                m_worker_thread->join();
-            }
-            delete m_worker_thread;
-            m_worker_thread = nullptr;
-        }
+    ~impl() {}
+
+    int id() const {
+        return m_id;
     }
 
     int state() const {
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
         return static_cast<int>(m_state);
     }
 
     void start() {
-        {
-            std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        if (m_state != worker::Exited) {
             m_state = worker::Running;
         }
-        set_done_status(false);
     }
 
     void stop() {
         std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-        m_state = worker::Stoped;
+        if (m_state != worker::Exited) {
+            m_state = worker::Stoped;
+        }
     }
 
     void wait() {
-        std::unique_lock<std::mutex> lock(m_done_mtx);
-        m_done_condition.wait(lock, [this] {
-            return (m_done == true);
-        });
-    }
-
-    bool wait_for(int ms) {
-        std::unique_lock<std::mutex> lock(m_done_mtx);
-        bool done = m_done_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] {
-            return (m_done == true);
-        });
-        return done;
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        if (m_joined == false) {
+            m_joined = true;
+            lock.unlock();
+            if (m_worker_thread.joinable() == true) {
+                m_worker_thread.join();
+            } else {
+                m_worker_thread.detach();
+            }
+        }
     }
 
     void quit() {
         {
             std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-            m_state = worker::Finalized;
+            if (m_state != worker::Exited) {
+                m_state = worker::Finalized;
+            }
         }
         m_condition.notify_all();
     }
@@ -98,32 +95,30 @@ public:
     }
 
     void assign_to(int cpu) {
-        if (m_worker_thread != nullptr) {
 #ifdef __linux__
-            if (cpu >= 0) {
-                cpu_set_t cpuset;
-                int ret = 0;
-                /* Set affinity mask to include CPUs (cpu) */
-                CPU_ZERO(&cpuset);
-                CPU_SET(cpu, &cpuset);
+        if (cpu >= 0) {
+            cpu_set_t cpuset;
+            int ret = 0;
+            /* Set affinity mask to include CPUs (cpu) */
+            CPU_ZERO(&cpuset);
+            CPU_SET(cpu, &cpuset);
 
-                pthread_t pthread = m_worker_thread->native_handle();
-                ret = pthread_setaffinity_np(pthread, sizeof(cpuset), &cpuset);
-                if (ret != 0) {
-                    fprintf(stderr, "[%s] pthread_setaffinity_np failed, %d\n", __FUNCTION__, ret);
-                }
-                /* Check the actual affinity mask assigned to the pthread. */
-                ret = pthread_getaffinity_np(pthread, sizeof(cpuset), &cpuset);
-                if (ret != 0) {
-                    fprintf(stderr, "[%s] pthread_getaffinity_np failed, %d\n", __FUNCTION__, ret);
-                }
-
-                for (int j = 0; j < CPU_SETSIZE; j++) {
-                    CPU_ISSET(j, &cpuset);
-                }
+            pthread_t pthread = m_worker_thread.native_handle();
+            ret = pthread_setaffinity_np(pthread, sizeof(cpuset), &cpuset);
+            if (ret != 0) {
+                fprintf(stderr, "[%s] pthread_setaffinity_np failed, %d\n", __FUNCTION__, ret);
             }
-#endif
+            /* Check the actual affinity mask assigned to the pthread. */
+            ret = pthread_getaffinity_np(pthread, sizeof(cpuset), &cpuset);
+            if (ret != 0) {
+                fprintf(stderr, "[%s] pthread_getaffinity_np failed, %d\n", __FUNCTION__, ret);
+            }
+
+            for (int j = 0; j < CPU_SETSIZE; j++) {
+                CPU_ISSET(j, &cpuset);
+            }
         }
+#endif
     }
 
     void add_task(task_base_ptr task) {
@@ -134,94 +129,80 @@ public:
         m_condition.notify_one();
     }
 
-    void set_done_status(bool done) {
-        std::unique_lock<std::mutex> lock(m_done_mtx);
-        m_done = done;
-    }
-
 private:
     void run() {
-        bool done = false;
-        while (true) {
+        using namespace std::chrono_literals;
+        do {
             task_base_ptr _task = {nullptr};
             try {
-                {
-                    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+                std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+                if (m_task_queue.size() == 0) {
                     m_condition.wait_for(lock, std::chrono::milliseconds(1000), [this] {
-                        return ((m_state == worker::Finalized) || (m_task_queue.empty() == false));
+                        return ((m_state != worker::Running) || (m_task_queue.empty() == false));
                     });
-
-                    if (m_state == worker::Finalized) {
-                        m_task_queue = {};
-                        break;
-                    }
-                    if (m_state == worker::Running) {
-                        if (m_task_queue.size() > 0) {
-                            _task = std::move(m_task_queue.front());
-                            m_task_queue.pop();
-                        }
-
-                        if (m_task_queue.size() == 0) {
-                            done = true;
-                        }
-                    }
                 }
-                if (_task != nullptr) {
-                    _task->execute();
-                }
+                if (m_state == worker::Finalized) {
+                    break;
+                } else if (m_state == worker::Running) {
+                    if (m_task_queue.size() > 0) {
+                        _task = std::move(m_task_queue.front());
+                        m_task_queue.pop();
+                    }
 
-                if (done == true) {
-                    done == false;
-                    set_done_status(true);
-                    m_done_condition.notify_all();
+                    if (_task != nullptr) {
+                        _task->execute();
+                    }
+                } else {
+                    std::this_thread::sleep_for(1ms);
                 }
             } catch (...) {
                 // Do nothing
             }
+        } while (m_state != worker::Finalized);
+        {
+            std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+            m_state = worker::Exited;
         }
-
-        set_done_status(true);
-        m_done_condition.notify_all();
     }
 };
 
 /**
- * @fn worker::worker()
- * @brief Construct a new worker::worker object
+ * @fn worker_p::worker_p()
+ * @brief Construct a new worker_p::worker_p object
  *
  */
-worker::worker(std::initializer_list<task_base_ptr> task_list) :
-    m_impl(std::make_unique<worker::impl>(task_list)) {
+worker_p::worker_p(std::initializer_list<task_base_ptr> task_list) :
+    m_impl(std::make_unique<worker_p::impl>(task_list, get_new_id<id_provider_type::Worker>())) {
 }
 
-worker::~worker() {
+worker_p::~worker_p() {
+}
+int worker_p::id() const {
+    return m_impl->id();
 }
 
-int worker::state() const {
+int worker_p::state() const {
     return m_impl->state();
 }
-void worker::start() {
+void worker_p::start() {
     m_impl->start();
 }
-void worker::stop() {
+void worker_p::stop() {
     m_impl->stop();
 }
-void worker::wait() {
-    m_impl->wait();
-}
-bool worker::wait_for(int ms) {
-    return m_impl->wait_for(ms);
-}
-void worker::quit() {
+void worker_p::quit() {
     m_impl->quit();
 }
-size_t worker::task_count() const {
+void worker_p::wait() {
+    m_impl->wait();
+}
+size_t worker_p::task_count() const {
     return m_impl->task_count();
 }
-void worker::assign_to(int cpu) {
+void worker_p::assign_to(int cpu) {
     m_impl->assign_to(cpu);
 }
-void worker::add_task(task_base_ptr task) {
+void worker_p::add_task(task_base_ptr task) {
     m_impl->add_task(task);
 }
 } // namespace ipc::core

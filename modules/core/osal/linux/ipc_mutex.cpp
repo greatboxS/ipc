@@ -38,6 +38,7 @@ int mutex_create(MUTEX_T &mtx, const char *name, unsigned int recursive) {
                 return RET_ERR;
             }
         }
+        strncpy(mtx.name, name, sizeof(mtx.name));
         snprintf(mtx.mem.name, sizeof(mtx.mem.name), "%s", genName);
         // Use shared memory to allocate MTX
         mtx.lock = (pthread_mutex_t *)mtx.mem.virt;
@@ -53,17 +54,14 @@ int mutex_create(MUTEX_T &mtx, const char *name, unsigned int recursive) {
         goto exit_error;
     }
 
-    if (multiprocess == true) {
-        /**
-         * The mutex can be shared with other thread that has the access
-         * to this mutex, even if the mutex is allocated in memory that is
-         * shared by multiple processes
-         */
-        if ((ret = pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) != RET_OK) {
-            OSAL_ERR("pthread_mutexattr_setpshared() error %s\n", __ERROR_STR__);
-        }
+    /**
+     * The mutex can be shared with other thread that has the access
+     * to this mutex, even if the mutex is allocated in memory that is
+     * shared by multiple processes
+     */
+    if ((ret = pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) != RET_OK) {
+        OSAL_ERR("pthread_mutexattr_setpshared() error %s\n", __ERROR_STR__);
     }
-
     if ((ret = pthread_mutexattr_setrobust(&attr, PTHREAD_MUTEX_ROBUST)) != RET_OK) {
         OSAL_ERR("pthread_mutexattr_setpshared() error %s\n", __ERROR_STR__);
     }
@@ -85,7 +83,7 @@ int mutex_create(MUTEX_T &mtx, const char *name, unsigned int recursive) {
     if ((ret = pthread_mutexattr_destroy(&attr)) != RET_OK) {
         OSAL_ERR("pthread_mutexattr_destroy() error %s\n", __ERROR_STR__);
     }
-    OSAL_INFO("[%s] Create mutex %s success\n", __FUNCTION__, name);
+    OSAL_INFO("[%s] Create mutex %s success\n", __FUNCTION__, mtx.mem.name);
     return RET_OK;
 
 exit_error:
@@ -175,7 +173,7 @@ int mutex_try_lock(MUTEX_T &mtx) {
  * @return int
  */
 int mutex_unlock(MUTEX_T &mtx) {
-    if (mtx.lock == NULL) {
+    if (mtx.lock == nullptr) {
         return RET_ERR;
     }
 
@@ -184,7 +182,7 @@ int mutex_unlock(MUTEX_T &mtx) {
         return ret;
     }
 
-    // OSAL_ERR("[%s] Mutex unlock failed, %d\n", __FUNCTION__, ret);
+    OSAL_ERR("[%s] Mutex unlock failed, %d\n", __FUNCTION__, ret);
     return RET_ERR;
 }
 
@@ -202,9 +200,7 @@ int mutex_destroy(MUTEX_T &mtx) {
         return RET_ERR;
     }
 
-    if ((ret = pthread_mutex_trylock(mtx.lock)) == 0) {
-        ret = pthread_mutex_destroy(mtx.lock);
-
+    if ((ret = pthread_mutex_destroy(mtx.lock)) == 0) {
         if (ret == RET_OK) {
             if (strnlen(mtx.mem.name, MTX_NAME_SIZE) > 0) {
                 shared_mem_close(mtx.mem);
@@ -217,7 +213,7 @@ int mutex_destroy(MUTEX_T &mtx) {
             mtx.lock = nullptr;
         }
     } else {
-        OSAL_ERR("errno(%d), mutex %s is still locked, cannot destroy\n", ret, mtx.mem.name);
+        OSAL_ERR("errno(%d), mutex is still locked, cannot destroy: %s\n", ret, mtx.name);
     }
 
     return ret;

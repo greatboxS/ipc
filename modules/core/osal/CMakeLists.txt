@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+add_compile_options("-fPIC")
+
 project(osal VERSION 1.0)
 
 # Get source files based on selection platform

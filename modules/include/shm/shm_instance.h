@@ -6,7 +6,7 @@
 
 namespace ipc::core {
 
-class shm_instance {
+class shm_instance : public std::enable_shared_from_this<shm_instance> {
 private:
     class impl;
     std::unique_ptr<impl> m_impl{nullptr};
@@ -19,19 +19,10 @@ public:
     ~shm_instance();
 
     /**
-     * @fn create()
-     * @brief 
-     * 
-     * @return true - success 
-     * @return false - fail
-     */
-    bool create();
-    void destroy();
-    /**
      * @fn open()
-     * @brief 
-     * 
-     * @return true - sucess 
+     * @brief
+     *
+     * @return true - sucess
      * @return false - fail
      */
     bool open();
@@ -52,6 +43,9 @@ public:
     int64_t seek(int64_t pos, uint32_t type);
     int64_t current_pos();
 };
+
+using shm_ptr = std::shared_ptr<shm_instance>;
+shm_ptr create_shm(const std::string &name, size_t size);
 
 } // namespace ipc::core
 

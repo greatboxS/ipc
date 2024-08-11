@@ -12,18 +12,18 @@ public:
     evloop_p(uint64_t id);
     virtual ~evloop_p();
     uint64_t id() const override;
-    int status() const override;
+    bool is_running() const override;
     int start() override;
     int stop() override;
     void set_handle(evloop::handle_w_ptr handle) override;
-    const worker_base *worker() const override;
+    std::shared_ptr<const worker> get_worker() const override;
 
 private:
     void post(message_ptr mesg);
     void task_completed();
     static void task_handle(message_ptr mesg, evloop::handle_w_ptr handle_ptr);
 
-    std::shared_mutex m_mtx = {};
+    mutable std::shared_mutex m_mtx = {};
     uint64_t m_id = 0;
     int m_state = 0;
     evloop::handle_w_ptr m_handle_ptr = {};

@@ -27,22 +27,22 @@ shm_instance::shm_instance(const std::string &name, size_t size) :
 shm_instance::~shm_instance() {
 }
 
-bool shm_instance::create() {
-    return (m_impl->create() > -1);
-}
-void shm_instance::destroy() {
-    (void)m_impl->destroy();
-}
 bool shm_instance::open() {
-    return (m_impl->open() > -1);
+    if (m_impl->create() < 0) {
+        if (m_impl->open() < 0) {
+            return false;
+        }
+    }
+    return true;
 }
 void shm_instance::close() {
-    (void)m_impl->close();
+    if (m_impl->opened() == true) {
+        (void)m_impl->destroy();
+    }
 }
 bool shm_instance::opened() const {
     return (m_impl->opened() != 0);
 }
-
 void shm_instance::lock() {
     return m_impl->lock();
 }
@@ -71,5 +71,9 @@ int64_t shm_instance::seek(int64_t pos, uint32_t type) {
 }
 int64_t shm_instance::current_pos() {
     return m_impl->current_pos();
+}
+
+shm_ptr create_shm(const std::string &name, size_t size) {
+    return std::make_shared<shm_instance>(name, size);
 }
 } // namespace ipc::core

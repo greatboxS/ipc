@@ -26,18 +26,16 @@ public:
 
     enum class state {
         Created,
-        Pending,
         Running,
         Stoped,
-        Invalid,
     };
 
     virtual uint64_t id() const = 0;
-    virtual int status() const = 0;
+    virtual bool is_running() const = 0;
     virtual int start() = 0;
     virtual int stop() = 0;
     virtual void set_handle(handle_w_ptr handle) = 0;
-    virtual const worker_base *worker() const = 0;
+    virtual std::shared_ptr<const worker> get_worker() const = 0;
 
     static handle_s_ptr make_handle(evloop::handle handle) {
         return std::make_shared<evloop::handle>(std::move(handle));

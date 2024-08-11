@@ -15,7 +15,6 @@ class csecured_shared_mem::impl {
 
     std::atomic<bool> m_is_opened = false;
     std::atomic<bool> m_is_created = false;
-    MUTEX_T m_mtx = {};
     SEM_T m_sem = {};
     SHM_T m_shm = {};
     std::string m_name = "";
@@ -24,7 +23,6 @@ class csecured_shared_mem::impl {
     impl(const std::string &name, size_t size) :
         m_is_opened(false),
         m_is_created(false),
-        m_mtx{},
         m_sem{},
         m_shm{},
         m_name(name),
@@ -43,13 +41,8 @@ class csecured_shared_mem::impl {
                 break;
             }
 
-            if (semaphore_create(m_sem, 10, m_name.c_str()) < 0) {
+            if (semaphore_create(m_sem, 1, m_name.c_str()) < 0) {
                 OSAC_ERR("Failed to create semaphore\n");
-                break;
-            }
-
-            if (mutex_create(m_mtx, m_name.c_str()) < 0) {
-                OSAC_ERR("Failed to create mutex\n");
                 break;
             }
 
@@ -65,13 +58,14 @@ class csecured_shared_mem::impl {
 
     int destroy() {
         int ret = -1;
-        if (m_is_created.load() == true) {
-            m_is_created.store(false);
-            mutex_destroy(m_mtx);
-            semaphore_destroy(m_sem);
-            shared_mem_destroy(m_shm);
-            ret = 0;
+        if ((ret = semaphore_destroy(m_sem)) < 0) {
+            OSAC_ERR("Failed to destroy semaphore\n");
         }
+        if ((ret = shared_mem_destroy(m_shm)) < 0) {
+            OSAC_ERR("Failed to destroy shared mem\n");
+        }
+        m_is_opened.store(false);
+        m_is_created.store(false);
         return ret;
     }
 
@@ -92,11 +86,6 @@ class csecured_shared_mem::impl {
                 break;
             }
 
-            if (mutex_create(m_mtx, m_name.c_str()) < 0) {
-                OSAC_ERR("Failed to open mutex\n");
-                break;
-            }
-
             if (shared_mem_open(m_shm, m_name.c_str(), m_size) < 0) {
                 OSAC_ERR("Failed to create share-memory\n");
                 break;
@@ -104,18 +93,6 @@ class csecured_shared_mem::impl {
             m_is_opened.store(true);
             ret = 0;
         } while (false);
-        return ret;
-    }
-
-    int close() {
-        bool ret = -1;
-        if (m_is_opened.load() == true) {
-            m_is_opened.store(false);
-            mutex_destroy(m_mtx);
-            semaphore_close(m_sem);
-            shared_mem_close(m_shm);
-            ret = 0;
-        }
         return ret;
     }
 
@@ -127,15 +104,9 @@ class csecured_shared_mem::impl {
         if (semaphore_wait(m_sem) != RET_OK) {
             return;
         }
-
-        if (mutex_lock(m_mtx) != RET_OK) {
-            semaphore_post(m_sem);
-            return;
-        }
     }
 
     void unlock() {
-        mutex_unlock(m_mtx);
         semaphore_post(m_sem);
     }
 
@@ -144,10 +115,6 @@ class csecured_shared_mem::impl {
             return false;
         }
 
-        if (mutex_lock(m_mtx) != RET_OK) {
-            semaphore_post(m_sem);
-            return false;
-        }
         return true;
     }
 
@@ -203,10 +170,6 @@ int csecured_shared_mem::destroy() {
 
 int csecured_shared_mem::open() {
     return m_impl->open();
-}
-
-int csecured_shared_mem::close() {
-    return m_impl->close();
 }
 
 int csecured_shared_mem::opened() const {

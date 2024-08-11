@@ -1,10 +1,10 @@
 #include "mutex/mutex_lock.h"
 #include "osac/cmutex.h"
+#include "osac/csemaphore.h"
 #include <string>
-#include "mutex/mutex_lock.h"
 
 namespace ipc::core {
-class impl : public cmutex {
+class local_mutex::impl : public cmutex {
     friend class mutex_lock;
     std::string m_name = "";
     int m_recursive = 0;
@@ -41,7 +41,7 @@ public:
  *
  */
 local_mutex::local_mutex() :
-    m_impl(std::make_unique<impl>(std::string(), 0)) {
+    m_impl(std::make_unique<local_mutex::impl>(std::string(), 0)) {
     m_impl->create();
 }
 
@@ -61,6 +61,36 @@ void local_mutex::unlock() {
     m_impl->unlock();
 }
 
+class global_mutex::impl : public csemaphore {
+    friend class global_mutex;
+    std::string m_name = "";
+
+public:
+    impl(const std::string &name) :
+        csemaphore(),
+        m_name(name) {
+    }
+    ~impl() {
+    }
+
+    void create() {
+        if (csemaphore::create(1, m_name.data()) < 0) {
+            csemaphore::open(m_name.data());
+        }
+    }
+
+    void lock() {
+        (void)csemaphore::wait();
+    }
+
+    bool try_lock() {
+        return (csemaphore::wait() == 0);
+    }
+
+    void unlock() {
+        (void)csemaphore::post();
+    }
+};
 /**
  * @fn global_mutex(const std::string &name)
  * @brief Construct a new process mutex::process mutex object
@@ -68,15 +98,12 @@ void local_mutex::unlock() {
  * @param name
  */
 global_mutex::global_mutex(const std::string &name) :
-    m_impl(std::make_unique<impl>(name, 0U)) {
+    m_impl(std::make_unique<global_mutex::impl>(name)) {
     m_impl->create();
 }
 
 global_mutex::~global_mutex() {
-}
-
-void global_mutex::destroy() {
-    (void)m_impl->destroy();
+    m_impl->destroy();
 }
 
 void global_mutex::lock() {

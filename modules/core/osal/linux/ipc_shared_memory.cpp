@@ -44,7 +44,7 @@ int shared_mem_open(SHM_T &shm, const char *name, size_t size) {
         return ret;
     }
 
-    if ((virt = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0)) == NULL) {
+    if ((virt = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0)) == MAP_FAILED) {
         OSAL_ERR("[%s] mmap() failed, %s\n", __FUNCTION__, __ERROR_STR__);
         ret = -2;
     }
@@ -95,10 +95,11 @@ int shared_mem_create(SHM_T &shm, const char *name, size_t size) {
 int shared_mem_close(SHM_T &shm) {
     int ret = close(shm.handle);
     if (ret == RET_OK) {
-        return RET_OK;
+        shm.handle = -1;
+    } else {
+        OSAL_INFO("[%s] Close shared memory file descriptor %d failed, %s\n", __FUNCTION__, shm.handle, __ERROR_STR__);
     }
 
-    OSAL_INFO("[%s] Close shared memory file descriptor %d failed, %s\n", __FUNCTION__, shm.handle, __ERROR_STR__);
     return ret;
 }
 
@@ -113,14 +114,15 @@ int shared_mem_destroy(SHM_T &shm) {
     int ret = munmap(shm.virt, shm.size);
     if (ret < 0) {
         OSAL_INFO("[%s] UnMapping shared memory virtual address failed, %s\n", __FUNCTION__, __ERROR_STR__);
-    }
-    GENERATE_SHM_NAME(shm.name);
-    ret = shm_unlink(genName);
-    if (ret == RET_OK) {
-        return RET_OK;
+    } else {
+        GENERATE_SHM_NAME(shm.name);
+        shm.virt = nullptr;
+        shm.size = 0;
+        if ((ret = shm_unlink(genName)) != 0) {
+            OSAL_INFO("[%s] Unlink shared memory %s failed, %s\n", __FUNCTION__, genName, __ERROR_STR__);
+        }
     }
 
-    OSAL_INFO("[%s] Unlink shared memory %s failed, %s\n", __FUNCTION__, genName, __ERROR_STR__);
     return ret;
 }
 

@@ -17,7 +17,6 @@ public:
     int create();
     int destroy();
     int open();
-    int close();
     int opened() const;
 
     void lock();

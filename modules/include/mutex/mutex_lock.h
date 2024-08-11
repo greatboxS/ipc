@@ -5,18 +5,13 @@
 
 namespace ipc::core {
 
-enum mutex_type {
-    thread,
-    process,
-};
-
-class impl;
 /**
  * @fn in process thread mutex
  * @brief
  *
  */
 class local_mutex {
+    class impl;
     std::unique_ptr<impl> m_impl{nullptr};
     local_mutex(const local_mutex &) = delete;
     local_mutex &operator=(const local_mutex &) = delete;
@@ -36,6 +31,7 @@ public:
  *
  */
 class global_mutex {
+    class impl;
     std::unique_ptr<impl> m_impl{nullptr};
     global_mutex(const global_mutex &) = delete;
     global_mutex &operator=(const global_mutex &) = delete;
@@ -43,7 +39,6 @@ class global_mutex {
 public:
     global_mutex(const std::string &name);
     ~global_mutex();
-    void destroy();
 
     void lock();
     bool try_lock();

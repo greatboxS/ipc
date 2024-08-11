@@ -36,7 +36,7 @@ public:
         } catch (...) {
         }
         using namespace std::chrono_literals;
-        std::this_thread::sleep_for(10ms);
+        // std::this_thread::sleep_for(10ms);
     }
 
     ipc::core::evloop::handle_s_ptr handle1;
@@ -51,28 +51,21 @@ bool task_handle(ipc::core::message_ptr mesg) {
     return false;
 }
 
+ipc::core::shm_ptr shm1 = ipc::core::create_shm("name1", 1024);
 std::mutex m1;
-ipc::core::worker_ptr wk = std::make_shared<ipc::core::worker>();
 int i = 0;
 ipc::core::global_mutex mutex1("mutex1");
 ipc::core::local_mutex mutex2;
 
 int main() {
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++ " << getpid() << std::endl;
+    std::cerr << "+++++++++++++++++++++++++++++++++++++++++++++++++++++ " << getpid() << std::endl;
     ipc::core::backtrace_init();
     classA a;
 
-    ipc::core::shm_instance shm1("name1", 1024);
-
-    if (shm1.create() == false) {
-        std::cout << "shm create failed\n";
-        if (shm1.open() == false) {
-            std::cout << "shm open failed\n";
-        } else {
-            std::cout << "shm_open success\n";
-        }
+    if (shm1->open() == false) {
+        std::cout << "shm open failed\n";
     } else {
-        std::cout << "create shm success\n";
+        std::cout << "shm_open success\n";
     }
 
     struct tmp {
@@ -80,47 +73,48 @@ int main() {
         int b = 10;
     };
 
-    // ipc::core::message_queue msgqueue1("/msg1", 1000, 100);
-    // if (msgqueue1.create() == 0) {
-    //     std::cout << "create message queue success\n";
-    // } else {
-    //     std::cout << "create message queue failed, try open\n";
-    //     if (msgqueue1.open() == 0) {
-    //         std::cout << "open message queue success\n";
+    ipc::core::message_queue msgqueue1("/msg1", 1000, 100);
+    if (msgqueue1.create() == 0) {
+        std::cout << "create message queue success\n";
+    } else {
+        std::cout << "create message queue failed, try open\n";
+        if (msgqueue1.open() == 0) {
+            std::cout << "open message queue success\n";
 
-    //     } else {
-    //         std::cout << "open message queue failed\n";
-    //     }
-    // }
+        } else {
+            std::cout << "open message queue failed\n";
+        }
+    }
 
-    for (i = 0; i < 10000; i++) {
+    ipc::core::worker_ptr wk = ipc::core::worker_man::get_instance().create_worker();
+    for (i = 0; i < 100; i++) {
         wk->add_task(
-            [&shm1](const int &a, const int &b, int &c, int d) {
-                std::lock_guard<ipc::core::shm_instance> lock1(shm1);
-                // std::lock_guard<ipc::core::global_mutex> lock2(mutex1);
-                // std::lock_guard<ipc::core::local_mutex> lock3(mutex2);
+            [&msgqueue1](const int &a, const int &b, int &c, int d, ipc::core::shm_ptr shm) {
+                std::unique_lock<ipc::core::shm_instance> lock1(*shm);
+                std::lock_guard<ipc::core::global_mutex> lock2(mutex1);
+                std::lock_guard<ipc::core::local_mutex> lock3(mutex2);
 
-                tmp *tmp_ptr = shm1.get<tmp>();
-                // char buff[1024];
+                tmp *tmp_ptr = shm->get<tmp>();
+                char buff[1024];
 
-                // if (msgqueue1.size() > 0) {
-                //     int bytes = msgqueue1.receive(buff, sizeof(buff));
-                //     if (bytes > 0) {
-                //         std::cout << "receive " << bytes << " from mesgqueue1\n";
-                //     }
-                // }
-                // msgqueue1.send("hello world", sizeof("hello world"));
+                if (msgqueue1.size() > 0) {
+                    int bytes = msgqueue1.receive(buff, sizeof(buff));
+                    if (bytes > 0) {
+                        std::cout << "receive " << bytes << " from mesgqueue1\n";
+                    }
+                }
+                msgqueue1.send("hello world", sizeof("hello world"));
 
-                // std::cout << "a = " << a << ", b = " << b << ", c = " << c << ", d = " << d << std::endl;
-                // std::cout << "tmp_ptr->a = " << tmp_ptr->a << ", tmp_ptr->b = " << tmp_ptr->b << std::endl;
+                std::cout << "a = " << a << ", b = " << b << ", c = " << c << ", d = " << d << std::endl;
+                std::cout << "tmp_ptr->a = " << tmp_ptr->a << ", tmp_ptr->b = " << tmp_ptr->b << std::endl;
                 std::cout << "---------------- process: " << getpid() << ", thread: " << pthread_self() << "\n";
-                // tmp_ptr->a++;
-                // tmp_ptr->b = tmp_ptr->a + 1;
+                tmp_ptr->a++;
+                tmp_ptr->b = tmp_ptr->a + 1;
                 using namespace std::chrono_literals;
-                // std::this_thread::sleep_for(100ms);
+                std::this_thread::sleep_for(1ms);
             },
             std::function<void()>(nullptr),
-            (int)i, i, i, (int)i);
+            (int)i, i, i, (int)i, shm1->shared_from_this());
     }
 
     std::function<void(const char *, const int &)> fnc = [](const char *str, const int &a) {
@@ -136,11 +130,8 @@ int main() {
 
     wk->add_task(task_handle, nullptr, ipc::core::message::create("", "", "hello task"));
     wk->start();
-    wk->wait();
-    wk->quit();
-    std::cout << "============================================================ " << getpid() << std::endl;
-    shm1.destroy();
-    // mutex1.destroy();
+    bool done = ipc::core::worker_man::get_instance().wait(wk);
+    std::cout << "==========================================wk================== " << done << " pid: " << getpid() << std::endl;
 
     ipc::core::message_args<int, int, std::string> args;
     args << 1 << 2 << "hello world\n";
@@ -156,22 +147,37 @@ int main() {
     el1->start();
     el2->start();
 
-    for (i = 0; i < 0; i++) {
+    auto ev_worker = el1->get_worker();
+    ev_worker->task_count();
+
+    for (i = 0; i < 100; i++) {
         ipc::core::evloop_man::get_instance().post_event(el2, std::string("sender ").append(std::to_string(i)), "receiver3", &i, 10.0);
     }
 
-    ipc::core::worker worker1({
+    ipc::core::worker_ptr worker1 = ipc::core::worker_man::get_instance().create_worker({
         {ipc::core::make_task([]() {
             printf("initialize list task 1\n");
-        }, nullptr)},
+        },
+                              nullptr)},
         {ipc::core::make_task([]() {
             printf("initialize list task 2\n");
-        }, nullptr)},
+        },
+                              nullptr)},
     });
 
-    worker1.assign_to(1);
-    worker1.start();
-    worker1.wait();
+    worker1->start();
+
+    done = ipc::core::worker_man::get_instance().wait(worker1);
+    std::cout << "=====================================worker1======================= " << done << " pid: " << getpid() << std::endl;
+
+    worker_ptr->start();
+    done = ipc::core::worker_man::get_instance().wait(worker_ptr);
+    std::cout << "=====================================worker_ptr======================= " << done << " pid: " << getpid() << std::endl;
+
+    el1->stop();
+    el2->stop();
+    ipc::core::worker_man::get_instance().quit_all();
+    shm1->close();
 
     try {
         ipc_throw_exception("Hello world %s, %d", "fjd", 10);
@@ -182,9 +188,5 @@ int main() {
     } catch (...) {
         std::cout << "other exception\n";
     }
-
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(100ms);
-
     return 0;
 }

@@ -1,15 +1,10 @@
 #include "mesg_p.h"
 #include <string.h>
 #include <atomic>
+#include "../identify/id_provider.h"
 
 namespace ipc::core {
 static constexpr size_t MAXQUEUE = 1024;
-
-static uint64_t getId() {
-    static std::atomic<uint64_t> id = 0;
-    id.store(id.load() + 1);
-    return id.load();
-}
 
 /**
  * @fn message_p(const std::string &sender, const std::string &receiver, const char *data, size_t size)
@@ -21,14 +16,13 @@ static uint64_t getId() {
  * @param size
  */
 message_p::message_p(const std::string &sender, const std::string &receiver, const char *data, size_t size) :
-    m_id(0),
+    m_id(get_new_id<id_provider_type::Message>()),
     m_sender(sender),
     m_receiver(receiver) {
     if ((data != nullptr) && (size > 0)) {
         m_data.resize(size);
         memcpy(m_data.data(), data, size);
     }
-    m_id = getId();
 }
 
 message_p::~message_p() {

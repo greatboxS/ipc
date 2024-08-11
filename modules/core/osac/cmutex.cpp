@@ -70,7 +70,7 @@ int cmutex::unlock() {
  * @return int
  */
 int cmutex::destroy() {
-    if (m_s32IsOpen == -1) return -1;
+    if (m_s32IsOpen < 0) return -1;
     m_s32IsOpen = -1;
     return mutex_destroy(m_stMtx);
 }

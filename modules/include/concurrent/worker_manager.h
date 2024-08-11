@@ -16,7 +16,18 @@ class worker_man {
 
 public:
     static worker_man &get_instance();
-    worker_ptr create_worker();
+    worker_ptr create_worker(std::initializer_list<task_base_ptr> task_list = {});
+
+    /**
+     * @fn wait()
+     * @brief
+     *
+     * @param worker    watching worker
+     * @param timeout   wait time
+     * @return          worker task empty status
+     */
+    bool wait(worker_ptr worker, int timeout = __INT_MAX__);
+    void quit_all();
 };
 } // namespace ipc::core
 

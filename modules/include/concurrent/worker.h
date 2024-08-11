@@ -7,38 +7,28 @@
 
 namespace ipc::core {
 
-class worker_base {
+class worker {
 protected:
-    virtual ~worker_base() = default;
+    virtual ~worker() = default;
 
 public:
-    virtual int state() const = 0;
-    virtual void start() = 0;
-    virtual void stop() = 0;
-    virtual void quit() = 0;
-    virtual size_t task_count() const = 0;
-    virtual void wait() = 0;
-    virtual bool wait_for(int ms) = 0;
-    virtual void assign_to(int cpu) = 0;
-};
-
-class worker : public worker_base {
-    worker(const worker &) = delete;
-    worker &operator=(const worker &) = delete;
-
     enum worker_state {
         Idle,
         Running,
         Stoped,
         Finalized,
+        Exited,
     };
 
-    class impl;
-    std::unique_ptr<impl> m_impl{nullptr};
-
-public:
-    worker(std::initializer_list<task_base_ptr> task_list = {});
-    virtual ~worker();
+    virtual int id() const = 0;
+    virtual int state() const = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
+    virtual void quit() = 0;
+    virtual void wait() = 0;
+    virtual size_t task_count() const = 0;
+    virtual void assign_to(int cpu) = 0;
+    virtual void add_task(task_base_ptr task) = 0;
 
     template <typename F, typename... Args>
     auto add_task(F func, std::function<void()> callback, Args &&...args) {
@@ -60,19 +50,7 @@ public:
         add_task(new_task);
         return std::move(new_task);
     }
-
-    void add_task(task_base_ptr task);
-
-    int state() const override;
-    void start() override;
-    void stop() override;
-    void wait() override;
-    bool wait_for(int ms) override;
-    void quit() override;
-    size_t task_count() const override;
-    void assign_to(int cpu) override;
 };
-
 using worker_ptr = std::shared_ptr<worker>;
 } // namespace ipc::core
 

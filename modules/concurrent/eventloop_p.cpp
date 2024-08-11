@@ -10,7 +10,7 @@ namespace ipc::core {
 evloop_p::evloop_p(uint64_t id) :
     m_mtx{},
     m_id(id),
-    m_state(0),
+    m_state(static_cast<int>(state::Created)),
     m_handle_ptr({}),
     m_worker(worker_man::get_instance().create_worker()),
     m_task_commpleted_cb(std::function<void()>(std::bind(&evloop_p::task_completed, this))) {}
@@ -22,14 +22,14 @@ uint64_t evloop_p::id() const {
     return m_id;
 }
 
-int evloop_p::status() const {
-    return m_worker->state();
+bool evloop_p::is_running() const {
+    std::shared_lock<std::shared_mutex> lock(m_mtx);
+    return (m_state == static_cast<int>(state::Running));
 }
 
 int evloop_p::start() {
     std::unique_lock<std::shared_mutex> lock(m_mtx);
     m_state = static_cast<int>(state::Running);
-
     m_worker->start();
     return 0;
 }
@@ -37,7 +37,7 @@ int evloop_p::start() {
 int evloop_p::stop() {
     std::unique_lock<std::shared_mutex> lock(m_mtx);
     m_state = static_cast<int>(state::Stoped);
-    m_worker->quit();
+    m_worker->stop();
     return 0;
 }
 
@@ -45,8 +45,8 @@ void evloop_p::set_handle(evloop::handle_w_ptr handle) {
     m_handle_ptr = handle;
 }
 
-const worker_base *evloop_p::worker() const {
-    return m_worker.get();
+std::shared_ptr<const worker> evloop_p::get_worker() const {
+    return m_worker;
 }
 
 void evloop_p::post(message_ptr mesg) {
