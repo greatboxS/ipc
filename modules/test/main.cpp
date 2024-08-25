@@ -43,12 +43,12 @@ public:
     ipc::core::evloop::handle_s_ptr handle2;
 };
 
-bool task_handle(ipc::core::message_ptr mesg) {
+std::string task_handle(ipc::core::message_ptr mesg) {
     std::cout << "Task task_handle\n";
     if (mesg != nullptr) {
         std::cout << "message: " << mesg->data() << std::endl;
     }
-    return false;
+    return "false";
 }
 
 ipc::core::shm_ptr shm1 = ipc::core::create_shm("name1", 1024);
@@ -113,7 +113,7 @@ int main() {
                 using namespace std::chrono_literals;
                 std::this_thread::sleep_for(1ms);
             },
-            std::function<void()>(nullptr),
+            std::function<void(ipc::core::task_base_ptr)>(nullptr),
             (int)i, i, i, (int)i, shm1->shared_from_this());
     }
 
@@ -128,7 +128,11 @@ int main() {
     wk->add_task(fnc, nullptr, "str222", (int)b);
     b = 10;
 
-    wk->add_task(task_handle, nullptr, ipc::core::message::create("", "", "hello task"));
+    wk->add_task(task_handle, [](ipc::core::task_base_ptr task) {
+        auto result = task->get();
+        printf("result size: %lu, value: %s\n", result.size(), result.get<std::string>(0).value().c_str());
+    }, ipc::core::message::create("", "", "hello task"));
+
     wk->start();
     bool done = ipc::core::worker_man::get_instance().wait(wk);
     std::cout << "==========================================wk================== " << done << " pid: " << getpid() << std::endl;

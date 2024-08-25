@@ -69,19 +69,19 @@ template <typename F>
 using function_args_tuple = typename function_traits<F>::args_tuple;
 
 template <typename F, typename... Args>
-auto make_task(F func, std::function<void()> callback, Args &&...args) {
+auto make_task(F func, std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
     using ResultType = decltype(func(std::declval<Args>()...));
     using TaskType = task<ResultType, Args...>;
     return std::make_shared<TaskType>(std::move(func), std::move(callback), std::forward<Args>(args)...);
 }
 
 template <typename R, typename... Args>
-auto make_task(R (*func)(Args...), std::function<void()> callback, Args &&...args) {
+auto make_task(R (*func)(Args...), std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
     return std::make_shared<task<R, std::decay_t<Args>...>>(func, std::move(callback), std::forward<Args>(args)...);
 }
 
 template <typename R, typename... Args>
-auto make_task(std::_Bind<R(Args...)> func, std::function<void()> callback, Args &&...args) {
+auto make_task(std::_Bind<R(Args...)> func, std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
     using ReturnType = function_return_type<R>;
     return std::make_shared<task<ReturnType, std::decay_t<Args>...>>(std::move(func), std::move(callback), std::forward<Args>(args)...);
 }

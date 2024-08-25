@@ -26,7 +26,7 @@ public:
 
 private:
     void post(message_ptr mesg);
-    void task_completed();
+    void task_completed(ipc::core::task_base_ptr task);
     static void task_handle(message_ptr mesg, evloop::handle_w_ptr handle_ptr);
 
     mutable std::shared_mutex m_mtx = {};
@@ -34,6 +34,6 @@ private:
     int m_state = 0;
     evloop::handle_w_ptr m_handle_ptr = {};
     worker_ptr m_worker = nullptr;
-    std::function<void()> m_task_commpleted_cb = {nullptr};
+    std::function<void(ipc::core::task_base_ptr)> m_task_commpleted_cb = {nullptr};
 };
 } // namespace ipc::core

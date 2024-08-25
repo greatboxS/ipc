@@ -24,21 +24,23 @@ class worker_p::impl {
 
     int m_id = 0;
     worker_state m_state = worker::Idle;
-    std::thread m_worker_thread = {};
     std::queue<task_base_ptr> m_task_queue = {};
     mutable std::mutex m_task_queue_mtx = {};
     std::condition_variable m_condition = {};
     bool m_joined = false;
+    std::atomic<size_t> m_executed_count = {0};
+    std::thread m_worker_thread = {};
 
 public:
     impl(std::initializer_list<task_base_ptr> task_list, int id) :
         m_id(id),
         m_state(worker::Idle),
-        m_worker_thread(std::thread(&impl::run, this)),
         m_task_queue{task_list},
         m_task_queue_mtx{},
         m_condition{},
-        m_joined(false) {
+        m_joined(false),
+        m_executed_count(0),
+        m_worker_thread(std::thread(&impl::run, this)) {
     }
 
     ~impl() {}
@@ -73,9 +75,15 @@ public:
             lock.unlock();
             if (m_worker_thread.joinable() == true) {
                 m_worker_thread.join();
-            } else {
-                m_worker_thread.detach();
             }
+        }
+    }
+
+    void detach() {
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        if (m_joined == false) {
+            m_joined = true;
+            m_worker_thread.detach();
         }
     }
 
@@ -87,6 +95,10 @@ public:
             }
         }
         m_condition.notify_all();
+    }
+
+    size_t executed_count() const {
+        return m_executed_count.load();
     }
 
     size_t task_count() const {
@@ -122,11 +134,18 @@ public:
     }
 
     void add_task(task_base_ptr task) {
-        {
-            std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        if (m_state != worker::Exited) {
             m_task_queue.push(task);
+            m_condition.notify_one();
         }
-        m_condition.notify_one();
+    }
+
+    void reset() {
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        if (m_state != worker::Exited) {
+            m_task_queue = {};
+        }
     }
 
 private:
@@ -135,25 +154,28 @@ private:
         do {
             task_base_ptr _task = {nullptr};
             try {
-                std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-                if (m_task_queue.size() == 0) {
-                    m_condition.wait_for(lock, std::chrono::milliseconds(1000), [this] {
-                        return ((m_state != worker::Running) || (m_task_queue.empty() == false));
-                    });
+                {
+                    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+                    if (m_task_queue.size() == 0) {
+                        m_condition.wait_for(lock, std::chrono::milliseconds(1000), [this] {
+                            return ((m_state != worker::Running) || (m_task_queue.empty() == false));
+                        });
+                    }
+                    if (m_state == worker::Finalized) {
+                        break;
+                    } else if (m_state == worker::Running) {
+                        if (m_task_queue.size() > 0) {
+                            _task = std::move(m_task_queue.front());
+                            m_task_queue.pop();
+                        }
+                    } else {
+                        std::this_thread::sleep_for(1ms);
+                    }
                 }
-                if (m_state == worker::Finalized) {
-                    break;
-                } else if (m_state == worker::Running) {
-                    if (m_task_queue.size() > 0) {
-                        _task = std::move(m_task_queue.front());
-                        m_task_queue.pop();
-                    }
 
-                    if (_task != nullptr) {
-                        _task->execute();
-                    }
-                } else {
-                    std::this_thread::sleep_for(1ms);
+                if (_task != nullptr) {
+                    _task->execute();
+                    m_executed_count.fetch_add(1U);
                 }
             } catch (...) {
                 // Do nothing
@@ -196,6 +218,12 @@ void worker_p::quit() {
 void worker_p::wait() {
     m_impl->wait();
 }
+void worker_p::detach() {
+    m_impl->detach();
+}
+size_t worker_p::executed_count() const {
+    return m_impl->executed_count();
+}
 size_t worker_p::task_count() const {
     return m_impl->task_count();
 }
@@ -204,5 +232,8 @@ void worker_p::assign_to(int cpu) {
 }
 void worker_p::add_task(task_base_ptr task) {
     m_impl->add_task(task);
+}
+void worker_p::reset() {
+    m_impl->reset();
 }
 } // namespace ipc::core

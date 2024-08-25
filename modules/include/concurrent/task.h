@@ -6,15 +6,19 @@
 #include <functional>
 #include <future>
 #include <atomic>
+#include "meta.h"
 
 namespace ipc::core {
 
-class task_base {
+class task_base : public std::enable_shared_from_this<task_base>{
 public:
     virtual ~task_base() = default;
     virtual bool is_done() const = 0;
     virtual void execute() = 0;
+    virtual meta_container_i get() = 0; 
 };
+
+using task_base_ptr = std::shared_ptr<task_base>;
 
 template <class R, class... Args>
 class task : public task_base {
@@ -23,7 +27,7 @@ class task : public task_base {
 
 public:
     using task_fnc = std::function<R(Args...)>;
-    using callback_fnc = std::function<void()>;
+    using callback_fnc = std::function<void(ipc::core::task_base_ptr)>;
 
     template <typename F>
     task(F func, callback_fnc callback, Args &&...args) :
@@ -54,17 +58,18 @@ public:
         }
         m_condition.notify_all();
         if (m_callback != nullptr) {
-            m_callback();
+            m_callback(shared_from_this());
         }
     }
 
-    R get() {
+    meta_container_i get() override {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_condition.wait(lock, [this] { return m_ready; });
         if (m_exception != nullptr) {
             std::rethrow_exception(m_exception);
         }
-        return m_result;
+        
+        return meta_container<int>(0, m_result);
     }
 
     bool is_done() const override {
@@ -104,7 +109,7 @@ class task<void, Args...> : public task_base {
 
 public:
     using task_fnc = std::function<void(Args...)>;
-    using callback_fnc = std::function<void()>;
+    using callback_fnc = std::function<void(ipc::core::task_base_ptr)>;
 
     template <typename F>
     task(F func, callback_fnc callback, Args &&...args) :
@@ -134,16 +139,17 @@ public:
         }
         m_condition.notify_all();
         if (m_callback != nullptr) {
-            m_callback();
+            m_callback(shared_from_this());
         }
     }
 
-    void get() {
+    meta_container_i get() override {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_condition.wait(lock, [this] { return m_ready; });
         if (m_exception != nullptr) {
             std::rethrow_exception(m_exception);
         }
+        return meta_container_i();
     }
 
     bool is_done() const override {
@@ -168,7 +174,6 @@ private:
     std::condition_variable m_condition = {};
 };
 
-using task_base_ptr = std::shared_ptr<task_base>;
 
 template <class R, class... Args>
 using task_ptr = std::shared_ptr<task<R, Args...>>;

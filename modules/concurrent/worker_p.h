@@ -20,9 +20,12 @@ public:
     void stop() override;
     void quit() override;
     void wait() override;
+    void detach() override;
+    size_t executed_count() const override;
     size_t task_count() const override;
     void assign_to(int cpu) override;
     void add_task(task_base_ptr task) override;
+    void reset() override;
 
 private:
     class impl;
