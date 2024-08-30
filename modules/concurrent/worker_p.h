@@ -9,7 +9,7 @@ class worker_p : public worker {
     worker_p(const worker_p &) = delete;
     worker_p &operator=(const worker_p &) = delete;
 
-    worker_p(std::initializer_list<task_base_ptr> task_list = {});
+    worker_p(std::vector<task_base_ptr> task_list = {});
 
 public:
     virtual ~worker_p();
@@ -25,7 +25,9 @@ public:
     size_t task_count() const override;
     void assign_to(int cpu) override;
     void add_task(task_base_ptr task) override;
+    void add_weak_task(task_base_weak_ptr task) override;
     void reset() override;
+    int thread_id() const override;
 
 private:
     class impl;

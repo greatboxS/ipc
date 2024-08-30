@@ -24,7 +24,7 @@ class worker_p::impl {
 
     int m_id = 0;
     worker_state m_state = worker::Idle;
-    std::queue<task_base_ptr> m_task_queue = {};
+    std::queue<std::pair<task_base_ptr, task_base_weak_ptr>> m_task_queue = {};
     mutable std::mutex m_task_queue_mtx = {};
     std::condition_variable m_condition = {};
     bool m_joined = false;
@@ -32,15 +32,18 @@ class worker_p::impl {
     std::thread m_worker_thread = {};
 
 public:
-    impl(std::initializer_list<task_base_ptr> task_list, int id) :
+    impl(std::vector<task_base_ptr> task_list, int id) :
         m_id(id),
         m_state(worker::Idle),
-        m_task_queue{task_list},
+        m_task_queue{},
         m_task_queue_mtx{},
         m_condition{},
         m_joined(false),
         m_executed_count(0),
         m_worker_thread(std::thread(&impl::run, this)) {
+        for (auto task : task_list) {
+            m_task_queue.emplace(std::move(task), task_base_weak_ptr{});
+        }
     }
 
     ~impl() {}
@@ -136,7 +139,15 @@ public:
     void add_task(task_base_ptr task) {
         std::unique_lock<std::mutex> lock(m_task_queue_mtx);
         if (m_state != worker::Exited) {
-            m_task_queue.push(task);
+            m_task_queue.emplace(std::move(task), task_base_weak_ptr{});
+            m_condition.notify_one();
+        }
+    }
+
+    void add_weak_task(task_base_weak_ptr task) {
+        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+        if (m_state != worker::Exited) {
+            m_task_queue.emplace(task_base_ptr{nullptr}, std::move(task));
             m_condition.notify_one();
         }
     }
@@ -146,6 +157,10 @@ public:
         if (m_state != worker::Exited) {
             m_task_queue = {};
         }
+    }
+
+    int thread_id() {
+        return m_worker_thread.native_handle();
     }
 
 private:
@@ -165,7 +180,12 @@ private:
                         break;
                     } else if (m_state == worker::Running) {
                         if (m_task_queue.size() > 0) {
-                            _task = std::move(m_task_queue.front());
+                            std::pair<task_base_ptr, task_base_weak_ptr> p = std::move(m_task_queue.front());
+                            if (p.first != nullptr) {
+                                _task = p.first;
+                            } else {
+                                _task = p.second.lock();
+                            }
                             m_task_queue.pop();
                         }
                     } else {
@@ -193,7 +213,7 @@ private:
  * @brief Construct a new worker_p::worker_p object
  *
  */
-worker_p::worker_p(std::initializer_list<task_base_ptr> task_list) :
+worker_p::worker_p(std::vector<task_base_ptr> task_list) :
     m_impl(std::make_unique<worker_p::impl>(task_list, get_new_id<id_provider_type::Worker>())) {
 }
 
@@ -233,7 +253,13 @@ void worker_p::assign_to(int cpu) {
 void worker_p::add_task(task_base_ptr task) {
     m_impl->add_task(task);
 }
+void worker_p::add_weak_task(task_base_weak_ptr task) {
+    m_impl->add_weak_task(task);
+}
 void worker_p::reset() {
     m_impl->reset();
+}
+int worker_p::thread_id() const {
+    return m_impl->thread_id();
 }
 } // namespace ipc::core

@@ -11,6 +11,7 @@
 #include <thread>
 
 static std::mutex mtx;
+static std::mutex task_mtx;
 static ipc::core::worker_ptr wk = nullptr;
 std::vector<std::future<void>> futures;
 
@@ -19,29 +20,42 @@ int main() {
     using namespace std::chrono_literals;
     std::thread thread1([]() {
         int count = 0;
-        while (++count < 100) {
+        wk = ipc::core::worker_man::get_instance().create_worker({}, true);
+        wk->start();
+        while (++count < 2) {
             int time = 200;
-            wk = ipc::core::worker_man::get_instance().create_worker({}, true);
-            wk->start();
+            static std::vector<ipc::core::task_base_ptr> task_list;
             printf("++ start worker: %d, timeout: %d\n", wk->id(), time);
             futures.emplace_back(std::async(std::launch::async, [count, _wk(wk)]() {
                 std::unique_lock<std::mutex> lock(mtx);
                 for (int i = 0; i < 10000; i++) {
                     if (_wk->state() != static_cast<int>(ipc::core::worker::Exited)) {
-                        _wk->add_task([count, i]() {
+                        auto task = ipc::core::make_task([count, i, _wk]() {
+                            printf("==> worker: %d, task: %lu\n", _wk->id(), i);
                             std::this_thread::sleep_for(1ms);
                         }, nullptr);
+
+                        {
+                            std::unique_lock<std::mutex> task_lock(task_mtx);
+                            task_list.push_back(task);
+                        }
+
+                        wk->add_weak_task(task);
                     } else {
-                        printf("==> worker: %d, executed count: %lu\n", _wk->id(), _wk->executed_count());
+                        printf("==> worker: %d, executed count: %lu\n", _wk->id(), task_list.size());
                         break;
                     }
                 }
             }));
             std::this_thread::sleep_for(200ms);
-            wk->quit();
-            printf("-- quit worker: %d, executed count: %lu\n", wk->id(), wk->executed_count());
-            wk->detach();
+            printf("-- quit worker: %d, task_list: %d, executed count: %lu\n", wk->id(), task_list.size(), wk->executed_count());
+            {
+                std::unique_lock<std::mutex> task_lock(task_mtx);
+                task_list.clear();
+            }
         }
+        wk->quit();
+        wk->detach();
     });
 
     thread1.join();

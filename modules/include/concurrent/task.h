@@ -19,6 +19,7 @@ public:
 };
 
 using task_base_ptr = std::shared_ptr<task_base>;
+using task_base_weak_ptr = std::weak_ptr<task_base>;
 
 template <class R, class... Args>
 class task : public task_base {

@@ -15,7 +15,7 @@ public:
     impl() {}
     ~impl() {}
 
-    worker_ptr create_worker(std::initializer_list<task_base_ptr> task_list = {}, bool detach = false) {
+    worker_ptr create_worker(std::vector<task_base_ptr> task_list = {}, bool detach = false) {
         auto wk = std::shared_ptr<worker>(new worker_p(task_list));
         if (detach == false) {
             m_worker_pool.push_back(wk);
@@ -58,7 +58,7 @@ worker_man &worker_man::get_instance() {
     return instance;
 }
 
-worker_ptr worker_man::create_worker(std::initializer_list<task_base_ptr> task_list, bool detach) {
+worker_ptr worker_man::create_worker(std::vector<task_base_ptr> task_list, bool detach) {
     return m_impl->create_worker(task_list, detach);
 }
 

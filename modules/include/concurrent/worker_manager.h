@@ -26,7 +26,7 @@ public:
      *                  otherwise a new worker will be own by worker manager.
      * @return worker_ptr 
      */
-    worker_ptr create_worker(std::initializer_list<task_base_ptr> task_list = {}, bool detach = false);
+    worker_ptr create_worker(std::vector<task_base_ptr> task_list = {}, bool detach = false);
 
     /**
      * @fn wait()

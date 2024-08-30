@@ -31,7 +31,9 @@ public:
     virtual size_t task_count() const = 0;
     virtual void assign_to(int cpu) = 0;
     virtual void add_task(task_base_ptr task) = 0;
+    virtual void add_weak_task(task_base_weak_ptr task) = 0;
     virtual void reset() = 0;
+    virtual int thread_id() const = 0;
 
     template <typename F, typename... Args>
     auto add_task(F func, std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
