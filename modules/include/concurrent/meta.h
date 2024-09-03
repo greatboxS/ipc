@@ -112,9 +112,10 @@ public:
         auto item = m_values.find(key);
         if (item != m_values.end()) {
             auto holder = dynamic_cast<meta_container::item<T> *>(item->second.get());
-            if (holder != nullptr) {
-                holder->set(value);
+            if (holder == nullptr) {
+                throw std::runtime_error("set() type mismatch for the key");
             }
+            holder->set(value);
         } else {
             m_values[key] = std::unique_ptr<meta_container::item_p>(new meta_container::item<T>(value));
         }
@@ -125,11 +126,11 @@ public:
     T &get(const Key &key) {
         auto it = m_values.find(key);
         if (it == m_values.end()) {
-            throw std::runtime_error("Key not found");
+            throw std::runtime_error("get() object's key not found");
         }
         meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
         if (holder == nullptr) {
-            throw std::runtime_error("Type mismatch for the key");
+            throw std::runtime_error("get() type mismatch for the key");
         }
         return holder->get();
     }
@@ -150,11 +151,11 @@ public:
     const T &data(const Key &key) const {
         auto it = m_values.find(key);
         if (it == m_values.end()) {
-            throw std::runtime_error("Key not found");
+            throw std::runtime_error("data() object's key not found");
         }
         meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
         if (holder == nullptr) {
-            throw std::runtime_error("Type mismatch for the key");
+            throw std::runtime_error("data() type mismatch for the key");
         }
         return holder->get();
     }
