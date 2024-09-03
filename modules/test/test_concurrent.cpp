@@ -28,10 +28,16 @@ int main() {
 
     ipc::core::task_result result;
     result[1] = 42;
-    std::cout << "result[1] = " << static_cast<int>(result[1]) << std::endl;
+    printf("int [1] = %d\n", static_cast<int>(result[1]));
 
     result[2] = std::string("Hello, World!");
-    std::cout << "result[2] = " << static_cast<std::string&>(result[2]) << std::endl;
+    printf("const char * [2] = %s\n", static_cast<const char *>(result[2]));
+
+    result[3] = (double)100.0f;
+    printf("double [3] = %f\n", (double)result[3]);
+
+    result[4] = 192.0f;
+    printf("float [4] = %f\n", (float)result[4]);
 
     using namespace std::chrono_literals;
     std::thread thread1([]() {

@@ -6,6 +6,7 @@
 #include <optional>
 #include <type_traits>
 #include <memory>
+#include <stdint.h>
 
 namespace ipc::core {
 template <typename Key>
@@ -55,19 +56,42 @@ public:
             return *this;
         }
 
-        template <typename T>
-        operator T &() {
-            return _container.get<T>(_key);
+        explicit operator int() {
+            return _container.get<int>(_key);
+        }
+
+        explicit operator unsigned int() {
+            return _container.get<unsigned int>(_key);
+        }
+
+        explicit operator int64_t() {
+            return _container.get<int64_t>(_key);
+        }
+
+        explicit operator uint64_t() {
+            return _container.get<uint64_t>(_key);
+        }
+
+        explicit operator double() {
+            return _container.get<double>(_key);
+        }
+
+        explicit operator float() {
+            return _container.get<float>(_key);
+        }
+
+        explicit operator const std::string &() const {
+            return _container.data<std::string>(_key);
+        }
+
+        explicit operator const char *() const {
+            return _container.get<std::string>(_key).c_str();
         }
 
     private:
         meta_container &_container;
         Key _key;
     };
-
-    value_proxy operator[](const Key &key) {
-        return value_proxy(*this, key);
-    }
 
     template <typename _Type>
     meta_container(const Key &key, const _Type &value) :
@@ -77,6 +101,10 @@ public:
 
     meta_container() :
         m_values{} {
+    }
+
+    value_proxy operator[](const Key &key) {
+        return value_proxy(*this, key);
     }
 
     template <typename T>
@@ -134,7 +162,6 @@ public:
     void erase(const Key &key) noexcept {
         auto it = m_values.find(key);
         if (it != m_values.end()) {
-            delete it->second;
             m_values.erase(it);
         }
     }
