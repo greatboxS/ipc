@@ -130,7 +130,10 @@ int main() {
 
     wk->add_task(task_handle, [](ipc::core::task_base_ptr task) {
         auto result = task->get();
-        printf("result size: %lu, value: %s\n", result.size(), result.get<std::string>(0).value().c_str());
+        if (result == nullptr) {
+            return;
+        }
+        printf("result size: %lu, value: %s\n", result->size(), result->get<std::string>(0).value().c_str());
     }, ipc::core::message::create("", "", "hello task"));
 
     wk->start();

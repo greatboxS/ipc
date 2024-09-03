@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <optional>
 #include <type_traits>
+#include <memory>
 
 namespace ipc::core {
 template <typename Key>
@@ -18,41 +19,54 @@ private:
 public:
     template <typename Arg>
     class item : public item_p {
-        static_assert(std::is_default_constructible<Arg>::value,
-                      "Invalid data type! Must not be reference or no default constructor existing");
-
     public:
-        explicit item(const Arg &value) :
-            m_value(value) {}
+        item(const Arg &val) :
+            _value(val) {}
 
-        explicit item(Arg &&value) noexcept(std::is_nothrow_move_constructible<Arg>::value) :
-            m_value(std::move(value)) {}
+        item(Arg &&val) :
+            _value(std::move(val)) {}
 
-        item(const item &other) = default;
+        void set(const Arg &val) { _value = val; }
 
-        item(item &&other) noexcept(std::is_nothrow_move_constructible<Arg>::value) = default;
+        void set(Arg &&val) { _value = std::move(val); }
 
-        item &operator=(const item &other) = default;
+        Arg &get() { return _value; }
 
-        item &operator=(item &&other) noexcept(std::is_nothrow_move_assignable<Arg>::value) = default;
-
-        void set(const Arg &value) { m_value = value; }
-
-        Arg get() const { return m_value; }
-
-        Arg &at() { return m_value; }
+        const Arg &get() const { return _value; }
 
     private:
-        Arg m_value;
+        Arg _value;
     };
 
-    std::unordered_map<Key, item_p *> m_values{};
+    class value_proxy {
+    public:
+        value_proxy(meta_container &container, const Key &key) :
+            _container(container), _key(key) {}
 
-public:
-    virtual ~meta_container() noexcept {
-        for (auto &entry : m_values) {
-            delete entry.second;
+        template <typename T>
+        value_proxy &operator=(T &&value) {
+            _container.set<T>(_key, std::forward<T>(value));
+            return *this;
         }
+
+        template <typename T>
+        value_proxy &operator=(const T &value) {
+            _container.set<T>(_key, value);
+            return *this;
+        }
+
+        template <typename T>
+        operator T &() {
+            return _container.get<T>(_key);
+        }
+
+    private:
+        meta_container &_container;
+        Key _key;
+    };
+
+    value_proxy operator[](const Key &key) {
+        return value_proxy(*this, key);
     }
 
     template <typename _Type>
@@ -69,38 +83,39 @@ public:
     meta_container &set(const Key &key, const T &value) {
         auto item = m_values.find(key);
         if (item != m_values.end()) {
-            auto holder = dynamic_cast<meta_container::item<T> *>(item->second);
-            if (holder) {
+            auto holder = dynamic_cast<meta_container::item<T> *>(item->second.get());
+            if (holder != nullptr) {
                 holder->set(value);
             }
         } else {
-            m_values[key] = new meta_container::item<T>(value);
+            m_values[key] = std::unique_ptr<meta_container::item_p>(new meta_container::item<T>(value));
         }
         return *this;
+    }
+
+    template <typename T>
+    T &get(const Key &key) {
+        auto it = m_values.find(key);
+        if (it == m_values.end()) {
+            throw std::runtime_error("Key not found");
+        }
+        meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
+        if (holder == nullptr) {
+            throw std::runtime_error("Type mismatch for the key");
+        }
+        return holder->get();
     }
 
     template <typename T>
     std::optional<T> get(const Key &key) const {
         auto it = m_values.find(key);
         if (it != m_values.end()) {
-            item<T> *holder = dynamic_cast<item<T> *>(it->second);
-            if (holder) {
+            meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
+            if (holder != nullptr) {
                 return std::optional<T>(std::in_place, holder->get());
             }
         }
-        return {};
-    }
-
-    template <typename T>
-    T &at(const Key &key) {
-        auto it = m_values.find(key);
-        if (it != m_values.end()) {
-            item<T> *holder = dynamic_cast<item<T> *>(it->second);
-            if (holder) {
-                return holder->at();
-            }
-        }
-        throw std::invalid_argument("No data found");
+        return std::nullopt;
     }
 
     void erase(const Key &key) noexcept {
@@ -114,6 +129,9 @@ public:
     auto size() const {
         return m_values.size();
     }
+
+private:
+    std::unordered_map<Key, std::unique_ptr<item_p>> m_values;
 };
 
 using meta_container_i = meta_container<int>;

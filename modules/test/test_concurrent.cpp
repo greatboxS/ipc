@@ -17,6 +17,14 @@ std::vector<std::future<void>> futures;
 
 int main() {
 
+
+    ipc::core::task_result result;
+    result[1] = 42;
+    std::cout << "result[1] = " << static_cast<int>(result[1]) << std::endl;
+
+    result[2] = std::string("Hello, World!");
+    std::cout << "result[2] = " << static_cast<std::string&>(result[2]) << std::endl;
+
     using namespace std::chrono_literals;
     std::thread thread1([]() {
         int count = 0;
@@ -31,7 +39,7 @@ int main() {
                 for (int i = 0; i < 10000; i++) {
                     if (_wk->state() != static_cast<int>(ipc::core::worker::Exited)) {
                         auto task = ipc::core::make_task([count, i, _wk]() {
-                            printf("==> worker: %d, task: %lu\n", _wk->id(), i);
+                            printf("==> worker: %d, task: %u\n", _wk->id(), i);
                             std::this_thread::sleep_for(1ms);
                         }, nullptr);
 
@@ -48,7 +56,7 @@ int main() {
                 }
             }));
             std::this_thread::sleep_for(200ms);
-            printf("-- quit worker: %d, task_list: %d, executed count: %lu\n", wk->id(), task_list.size(), wk->executed_count());
+            printf("-- quit worker: %d, task_list: %ld, executed count: %lu\n", wk->id(), task_list.size(), wk->executed_count());
             {
                 std::unique_lock<std::mutex> task_lock(task_mtx);
                 task_list.clear();
