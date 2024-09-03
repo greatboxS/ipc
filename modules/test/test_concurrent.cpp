@@ -17,6 +17,14 @@ std::vector<std::future<void>> futures;
 
 int main() {
 
+    wk = ipc::core::worker_man::get_instance().create_worker({}, true);
+    wk->start();
+
+    auto task_1 = wk->add_nocallback_task([]() {
+        return 10;
+    });
+
+    std::cout << "task_1 result = " << task_1->get()->data<int>(0) << std::endl;
 
     ipc::core::task_result result;
     result[1] = 42;
@@ -28,8 +36,6 @@ int main() {
     using namespace std::chrono_literals;
     std::thread thread1([]() {
         int count = 0;
-        wk = ipc::core::worker_man::get_instance().create_worker({}, true);
-        wk->start();
         while (++count < 2) {
             int time = 200;
             static std::vector<ipc::core::task_base_ptr> task_list;

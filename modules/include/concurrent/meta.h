@@ -118,6 +118,19 @@ public:
         return std::nullopt;
     }
 
+    template <typename T>
+    const T &data(const Key &key) const {
+        auto it = m_values.find(key);
+        if (it == m_values.end()) {
+            throw std::runtime_error("Key not found");
+        }
+        meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
+        if (holder == nullptr) {
+            throw std::runtime_error("Type mismatch for the key");
+        }
+        return holder->get();
+    }
+
     void erase(const Key &key) noexcept {
         auto it = m_values.find(key);
         if (it != m_values.end()) {

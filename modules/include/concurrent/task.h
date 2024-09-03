@@ -81,7 +81,7 @@ public:
         return m_exception_ptr;
     }
 
-    const task_result *get(int ms) override {
+    const task_result *get(int ms = si_task_get_timeout) override {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] { return m_finished; });
         return &m_task_result;
@@ -103,8 +103,7 @@ private:
     template <std::size_t... I>
     void task_handle(std::index_sequence<I...>) {
         if (m_func != nullptr) {
-            auto result = m_func(std::get<I>(m_args)...);
-            m_task_result.set(0, std::move(result));
+            m_task_result[0] = m_func(std::get<I>(m_args)...);
         }
     }
 
@@ -173,7 +172,7 @@ public:
         return m_exception_ptr;
     }
 
-    const task_result *get(int ms) override {
+    const task_result *get(int ms = si_task_get_timeout) override {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] { return m_finished; });
         return nullptr;
