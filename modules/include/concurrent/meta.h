@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <memory>
 #include <stdint.h>
+#include "except.h"
 
 namespace ipc::core {
 template <typename Key>
@@ -113,7 +114,7 @@ public:
         if (item != m_values.end()) {
             auto holder = dynamic_cast<meta_container::item<T> *>(item->second.get());
             if (holder == nullptr) {
-                throw std::runtime_error("set() type mismatch for the key");
+                ipc_throw_exception("Type mismatch for the key");
             }
             holder->set(value);
         } else {
@@ -126,11 +127,11 @@ public:
     T &get(const Key &key) {
         auto it = m_values.find(key);
         if (it == m_values.end()) {
-            throw std::runtime_error("get() object's key not found");
+            ipc_throw_exception("Key not found");
         }
         meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
         if (holder == nullptr) {
-            throw std::runtime_error("get() type mismatch for the key");
+            ipc_throw_exception("Type mismatch for the key");
         }
         return holder->get();
     }
@@ -151,11 +152,11 @@ public:
     const T &data(const Key &key) const {
         auto it = m_values.find(key);
         if (it == m_values.end()) {
-            throw std::runtime_error("data() object's key not found");
+            ipc_throw_exception("Key not found");
         }
         meta_container::item<T> *holder = dynamic_cast<meta_container::item<T> *>(it->second.get());
         if (holder == nullptr) {
-            throw std::runtime_error("data() type mismatch for the key");
+            ipc_throw_exception("Type mismatch for the key");
         }
         return holder->get();
     }

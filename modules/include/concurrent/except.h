@@ -40,7 +40,7 @@ public:
     }
 
     template <typename... Args>
-    static void throw_exception(const char *function, uint64_t line, Args &&...args) {
+    static void throw_exception(const char *function = __PRETTY_FUNCTION__, uint64_t line = __LINE__, Args &&...args) {
         ipc::core::except(function, line).raise(std::forward<Args>(args)...);
     }
 };

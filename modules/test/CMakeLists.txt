@@ -12,7 +12,6 @@ add_executable(concurrent_test test_concurrent.cpp)
 add_dependencies(${PROJECT_NAME} concurrent)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE concurrent 
-                                              except
                                               debuger
                                               shared_mem
                                               message_queue
@@ -20,7 +19,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE concurrent
                                               pthread)
 
 target_link_libraries(concurrent_test PRIVATE concurrent 
-                                              except
                                               debuger
                                               shared_mem
                                               message_queue

@@ -7,7 +7,6 @@ project(ipc VERSION 1.0.0 LANGUAGES CXX)
 add_compile_options("-g")
 
 add_subdirectory(debuger)
-add_subdirectory(exception)
 add_subdirectory(core)
 add_subdirectory(concurrent)
 add_subdirectory(ipc)

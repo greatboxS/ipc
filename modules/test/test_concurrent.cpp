@@ -4,7 +4,7 @@
 #include "concurrent/eventloop_manager.h"
 #include "concurrent/eventloop.h"
 #include <iostream>
-#include "exception/except.h"
+#include "concurrent/except.h"
 #include "debuger/debuger.h"
 #include "mutex/mutex_lock.h"
 #include "unistd.h"
@@ -16,28 +16,36 @@ static ipc::core::worker_ptr wk = nullptr;
 std::vector<std::future<void>> futures;
 
 int main() {
+    try {
+        wk = ipc::core::worker_man::get_instance().create_worker({}, true);
+        wk->start();
 
-    wk = ipc::core::worker_man::get_instance().create_worker({}, true);
-    wk->start();
+        auto task_1 = wk->add_nocallback_task([]() {
+            return 10;
+        });
 
-    auto task_1 = wk->add_nocallback_task([]() {
-        return 10;
-    });
+        std::cout << "task_1 result = " << task_1->get()->data<double>(0) << std::endl;
 
-    std::cout << "task_1 result = " << task_1->get()->data<int>(0) << std::endl;
+        ipc::core::task_result result;
+        result[1] = 42;
+        printf("int [1] = %d\n", static_cast<int>(result[1]));
 
-    ipc::core::task_result result;
-    result[1] = 42;
-    printf("int [1] = %d\n", static_cast<int>(result[1]));
+        result[2] = std::string("Hello, World!");
+        printf("const char * [2] = %s\n", static_cast<const char *>(result[2]));
 
-    result[2] = std::string("Hello, World!");
-    printf("const char * [2] = %s\n", static_cast<const char *>(result[2]));
+        result[3] = (double)100.0f;
+        printf("double [3] = %f\n", (double)result[3]);
 
-    result[3] = (double)100.0f;
-    printf("double [3] = %f\n", (double)result[3]);
+        result[4] = 192.0f;
+        printf("float [4] = %f\n", (float)result[4]);
 
-    result[4] = 192.0f;
-    printf("float [4] = %f\n", (float)result[4]);
+    } catch (std::exception &ex) {
+        std::cout << ex.what() << std::endl;
+    } catch (ipc::core::except &ex) {
+        std::cout << ex.what() << std::endl;
+    } catch (...) {
+        std::cout << "other exception\n";
+    }
 
     using namespace std::chrono_literals;
     std::thread thread1([]() {
@@ -53,7 +61,8 @@ int main() {
                         auto task = ipc::core::make_task([count, i, _wk]() {
                             printf("==> worker: %d, task: %u\n", _wk->id(), i);
                             std::this_thread::sleep_for(1ms);
-                        }, nullptr);
+                        },
+                                                         nullptr);
 
                         {
                             std::unique_lock<std::mutex> task_lock(task_mtx);

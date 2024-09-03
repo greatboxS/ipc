@@ -8,7 +8,8 @@ set(SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/mesg_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/eventloop_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/worker_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/worker_manager_p.cpp
-              ${CMAKE_CURRENT_SOURCE_DIR}/eventloop_manager_p.cpp)
+              ${CMAKE_CURRENT_SOURCE_DIR}/eventloop_manager_p.cpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/except.cpp)
 
 
 set(INC_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../include")
