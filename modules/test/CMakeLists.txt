@@ -3,6 +3,10 @@ project(test VERSION 1.0.0)
 # Include the directory containing additional CMake configuration files
 # set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/cmake")
 
+if(EXISTS ${CMAKE_INSTALL_PREFIX})
+    add_subdirectory(lib_test)
+endif()
+
 add_compile_options("-g")
 
 add_executable(${PROJECT_NAME} main.cpp)
