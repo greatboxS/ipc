@@ -23,22 +23,28 @@ uint64_t evloop_p::id() const {
 }
 
 bool evloop_p::is_running() const {
-    std::shared_lock<std::shared_mutex> lock(m_mtx);
-    return (m_state == static_cast<int>(state::Running));
+    return (get_state() == static_cast<int>(state::Running));
 }
 
 int evloop_p::start() {
-    std::unique_lock<std::shared_mutex> lock(m_mtx);
-    m_state = static_cast<int>(state::Running);
-    m_worker->start();
-    return 0;
+    int ret = -1;
+    if (get_state() == static_cast<int>(state::Created)) {
+        set_state(state::Running);
+        m_worker->start();
+        ret = 0;
+    }
+    return ret;
 }
 
 int evloop_p::stop() {
-    std::unique_lock<std::shared_mutex> lock(m_mtx);
-    m_state = static_cast<int>(state::Stoped);
-    m_worker->stop();
-    return 0;
+    int ret = -1;
+    if (get_state() == static_cast<int>(state::Running)) {
+        set_state(state::Stoped);
+        m_worker->quit();
+        m_worker->detach();
+        ret = 0;
+    }
+    return ret;
 }
 
 void evloop_p::set_handle(evloop::handle_w_ptr handle) {
@@ -49,8 +55,20 @@ std::shared_ptr<const worker> evloop_p::get_worker() const {
     return m_worker;
 }
 
+int evloop_p::get_state() const {
+    std::shared_lock<std::shared_mutex> lock(m_mtx);
+    return m_state;
+}
+
+void evloop_p::set_state(evloop_p::state s) {
+    std::unique_lock<std::shared_mutex> lock(m_mtx);
+    m_state = static_cast<int>(s);
+}
+
 void evloop_p::post(message_ptr mesg) {
-    m_worker->add_task(evloop_p::task_handle, m_task_commpleted_cb, std::move(mesg), evloop::handle_w_ptr(m_handle_ptr));
+    if (get_state() != static_cast<int>(state::Stoped)) {
+        m_worker->add_task(evloop_p::task_handle, m_task_commpleted_cb, std::move(mesg), evloop::handle_w_ptr(m_handle_ptr));
+    }
 }
 
 void evloop_p::task_completed(ipc::core::task_base_ptr task) {

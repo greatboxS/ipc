@@ -7,8 +7,10 @@ file(GLOB INF_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../include/concurrent/*.h
 set(SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/mesg_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/eventloop_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/worker_p.cpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/worker.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/worker_manager_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/eventloop_manager_p.cpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/condition_trigger.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/except.cpp)
 
 

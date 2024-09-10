@@ -13,6 +13,7 @@ namespace ipc::core {
 
 class evloop {
     evloop(const evloop &) = delete;
+    evloop(evloop &&) = delete;
     evloop &operator=(const evloop &) = delete;
 
 protected:

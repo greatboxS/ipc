@@ -9,22 +9,36 @@
 #include "mutex/mutex_lock.h"
 #include "unistd.h"
 #include <thread>
+#include "concurrent/condition_trigger.h"
 
 static std::mutex mtx;
 static std::mutex task_mtx;
-static ipc::core::worker_ptr wk = nullptr;
+static ipc::core::worker_ptr wk(new ipc::core::worker());
 std::vector<std::future<void>> futures;
+static ipc::core::condition_trigger trigger1;
 
+using namespace std::chrono_literals;
+                
 int main() {
     try {
-        wk = ipc::core::worker_man::get_instance().create_worker({}, true);
         wk->start();
 
         auto task_1 = wk->add_nocallback_task([]() {
             return 10;
         });
 
-        std::cout << "task_1 result = " << task_1->get()->data<double>(0) << std::endl;
+        std::thread thread11([]() {
+            std::this_thread::sleep_for(100ms);
+            trigger1.trigger();
+        });
+        thread11.detach();
+
+        std::cout << "task_1 result = " << task_1->get()->data<int>(0) << std::endl;
+
+        wk->add_nocallback_task([]() {
+            trigger1.wait();
+            printf("task_2 wait done!\n");
+        });
 
         ipc::core::task_result result;
         result[1] = 42;

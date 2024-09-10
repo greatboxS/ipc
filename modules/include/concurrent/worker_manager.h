@@ -12,6 +12,7 @@ class worker_man {
     ~worker_man();
 
     worker_man(const worker_man &) = delete;
+    worker_man(worker_man &&) = delete;
     worker_man &operator=(const worker_man &) = delete;
 
 public:
@@ -22,11 +23,9 @@ public:
      * @brief Create a worker object
      * 
      * @param task_list task list
-     * @param detach    the worker manager will not own the created task if the detach is true
-     *                  otherwise a new worker will be own by worker manager.
      * @return worker_ptr 
      */
-    worker_ptr create_worker(std::vector<task_base_ptr> task_list = {}, bool detach = false);
+    worker_ptr create_worker(std::vector<task_base_ptr> task_list = {});
 
     /**
      * @fn wait()

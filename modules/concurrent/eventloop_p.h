@@ -25,6 +25,8 @@ public:
     std::shared_ptr<const worker> get_worker() const override;
 
 private:
+    int get_state() const;
+    void set_state(evloop_p::state s);
     void post(message_ptr mesg);
     void task_completed(ipc::core::task_base_ptr task);
     static void task_handle(message_ptr mesg, evloop::handle_w_ptr handle_ptr);

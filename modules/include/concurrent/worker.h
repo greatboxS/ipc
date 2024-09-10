@@ -4,15 +4,20 @@
 #include "task.h"
 #include "task_helpers.h"
 #include <memory>
+#include <vector>
 
 namespace ipc::core {
 
 class worker {
-protected:
-    virtual ~worker() = default;
+    worker(const worker &) = delete;
+    worker(worker &&) = delete;
+    worker &operator=(const worker &) = delete;
+
+    class impl;
+    std::unique_ptr<worker::impl> m_impl{nullptr};
 
 public:
-    enum worker_state {
+    enum State {
         Idle,
         Running,
         Stoped,
@@ -20,20 +25,23 @@ public:
         Exited,
     };
 
-    virtual int id() const = 0;
-    virtual int state() const = 0;
-    virtual void start() = 0;
-    virtual void stop() = 0;
-    virtual void quit() = 0;
-    virtual void wait() = 0;
-    virtual void detach() = 0;
-    virtual size_t executed_count() const = 0;
-    virtual size_t task_count() const = 0;
-    virtual void assign_to(int cpu) = 0;
-    virtual void add_task(task_base_ptr task) = 0;
-    virtual void add_weak_task(task_base_weak_ptr task) = 0;
-    virtual void reset() = 0;
-    virtual int thread_id() const = 0;
+    worker(const std::vector<task_base_ptr> &task_list = {});
+    ~worker();
+
+    int id() const;
+    int state() const;
+    void start();
+    void stop();
+    void quit();
+    void wait();
+    void detach();
+    size_t executed_count() const;
+    size_t task_count() const;
+    void assign_to(int cpu);
+    void add_task(task_base_ptr task);
+    void add_weak_task(task_base_weak_ptr task);
+    void reset();
+    std::thread::id thread_id() const;
 
     template <typename F, typename... Args>
     auto add_task(F func, std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
