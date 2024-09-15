@@ -6,24 +6,26 @@
 namespace ipc::core {
 class condition_trigger::impl {
     friend class condition_trigger;
+    int m_timeout = 0;
     bool m_done{false};
     std::mutex m_mtx{};
     std::condition_variable m_cv{};
 
 public:
+    impl(int ms) :
+        m_timeout(ms),
+        m_done(false),
+        m_mtx{},
+        m_cv{} {
+    }
     void wait() {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        if (m_done == false) {
-            m_cv.wait(lock, [this]() {
-                return (m_done == true);
-            });
-        }
+        wait_for(m_timeout);
     }
 
     bool wait_for(int ms) {
         std::unique_lock<std::mutex> lock(m_mtx);
         if (m_done == false) {
-            (void)m_cv.wait_for(lock, std::chrono::milliseconds(1000), [this]() {
+            (void)m_cv.wait_for(lock, std::chrono::milliseconds(ms), [this]() {
                 return (m_done == true);
             });
         }
@@ -45,8 +47,8 @@ public:
     }
 };
 
-condition_trigger::condition_trigger() :
-    m_impl(new impl()) {
+condition_trigger::condition_trigger(int ms) :
+    m_impl(new impl(ms)) {
 }
 
 condition_trigger::~condition_trigger() {

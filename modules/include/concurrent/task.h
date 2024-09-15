@@ -6,6 +6,7 @@
 #include <future>
 #include <atomic>
 #include "task_base.h"
+#include "task_helpers.h"
 
 namespace ipc::core {
 
@@ -184,8 +185,23 @@ private:
     std::condition_variable m_condition = {};
 };
 
-template <class R, class... Args>
-using task_ptr = std::shared_ptr<task<R, Args...>>;
+template <typename F, typename... Args>
+auto make_task(F func, std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
+    using ResultType = decltype(func(std::declval<Args>()...));
+    using TaskType = task<ResultType, Args...>;
+    return std::make_shared<TaskType>(std::move(func), std::move(callback), std::forward<Args>(args)...);
+}
+
+template <typename R, typename... Args>
+auto make_task(R (*func)(Args...), std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
+    return std::make_shared<task<R, std::decay_t<Args>...>>(func, std::move(callback), std::forward<Args>(args)...);
+}
+
+template <typename R, typename... Args>
+auto make_task(std::_Bind<R(Args...)> func, std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
+    using ReturnType = function_return_type<R>;
+    return std::make_shared<task<ReturnType, std::decay_t<Args>...>>(std::move(func), std::move(callback), std::forward<Args>(args)...);
+}
 
 } // namespace ipc::core
 

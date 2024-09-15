@@ -16,6 +16,7 @@ public:
         Executing,
         Finished,
         Failed,
+        Timeout,
     };
     virtual ~task_base() = default;
     virtual void execute() = 0;

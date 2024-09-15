@@ -11,6 +11,7 @@ set(SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/mesg_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/worker_manager_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/eventloop_manager_p.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/condition_trigger.cpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/task_chain.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/except.cpp)
 
 
