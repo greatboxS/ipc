@@ -5,8 +5,9 @@
 #include "concurrent/worker.h"
 
 namespace ipc::core {
-class evloop_p : public evloop {
+class evloop_p {
     friend class evloop_man;
+    friend class evloop;
 
 public:
     enum class state {
@@ -15,27 +16,29 @@ public:
         Stoped,
     };
 
-    evloop_p(uint64_t id);
-    virtual ~evloop_p();
-    uint64_t id() const override;
-    bool is_running() const override;
-    int start() override;
-    int stop() override;
-    void set_handle(evloop::handle_w_ptr handle) override;
-    std::shared_ptr<const worker> get_worker() const override;
+    evloop_p(int id, worker_ptr worker);
+    ~evloop_p();
+    int id() const;
+    bool is_running() const;
+    int start();
+    int stop();
+    void set_handle(evloop::handle_w_ptr handle);
+    const_worker_ptr get_worker() const;
+    worker_ptr get_worker();
 
 private:
     int get_state() const;
     void set_state(evloop_p::state s);
     void post(message_ptr mesg);
     void task_completed(ipc::core::task_base_ptr task);
-    static void task_handle(message_ptr mesg, evloop::handle_w_ptr handle_ptr);
+    static void task_handle(message_ptr mesg, evloop::handle_w_ptr main_handle, evloop::handle_w_ptr sub_handle);
 
     mutable std::shared_mutex m_mtx = {};
     uint64_t m_id = 0;
     int m_state = 0;
-    evloop::handle_w_ptr m_handle_ptr = {};
-    worker_ptr m_worker = nullptr;
+    evloop::handle_s_ptr m_main_handle{};
+    evloop::handle_w_ptr m_sub_handle{};
     std::function<void(ipc::core::task_base_ptr)> m_task_commpleted_cb = {nullptr};
+    worker_ptr m_worker = nullptr;
 };
 } // namespace ipc::core

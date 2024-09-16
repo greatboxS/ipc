@@ -1,6 +1,5 @@
 #include "concurrent/mesg.h"
 #include "concurrent/mesg_args.h"
-#include "concurrent/worker_manager.h"
 #include "concurrent/eventloop_manager.h"
 #include "concurrent/eventloop.h"
 #include <thread>

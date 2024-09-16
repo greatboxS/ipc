@@ -13,7 +13,9 @@ namespace ipc::core {
 template <class R, class... Args>
 class task : public task_base {
     task(const task &) = delete;
+    task(task &&) = delete;
     task &operator=(const task &) = delete;
+    task &operator=(task &&) = delete;
 
 public:
     using task_fnc = std::function<R(Args...)>;

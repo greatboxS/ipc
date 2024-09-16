@@ -12,6 +12,7 @@ class worker {
     worker(const worker &) = delete;
     worker(worker &&) = delete;
     worker &operator=(const worker &) = delete;
+    worker &operator=(worker &&) = delete;
 
     class impl;
     std::unique_ptr<worker::impl> m_impl{nullptr};
@@ -65,6 +66,11 @@ public:
     }
 };
 using worker_ptr = std::shared_ptr<worker>;
+using const_worker_ptr = std::shared_ptr<const worker>;
+
+static inline worker_ptr make_worker(const std::vector<task_base_ptr> &task_list = {}) {
+    return std::make_shared<worker>(task_list);
+} 
 } // namespace ipc::core
 
 #endif // WORKER_H

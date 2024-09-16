@@ -1,7 +1,5 @@
 #include "concurrent/mesg.h"
 #include "concurrent/mesg_args.h"
-#include "concurrent/worker_manager.h"
-#include "concurrent/eventloop_manager.h"
 #include "concurrent/eventloop.h"
 #include <thread>
 #include <iostream>
@@ -12,13 +10,15 @@
 #include "mutex/mutex_lock.h"
 #include "unistd.h"
 
-class classA : public std::enable_shared_from_this<classA> {
+class eventloop_1 : public ipc::core::evloop {
 public:
-    classA() :
-        handle1(ipc::core::evloop::make_handle(std::bind(&classA::function1, this, std::placeholders::_1))),
-        handle2(ipc::core::evloop::make_handle(std::bind(&classA::function2, this, std::placeholders::_1))) {
+    eventloop_1() :
+        ipc::core::evloop(ipc::core::make_worker()),
+        handle1(ipc::core::evloop::make_handle(std::bind(&eventloop_1::function1, this, std::placeholders::_1))),
+        handle2(ipc::core::evloop::make_handle(std::bind(&eventloop_1::function2, this, std::placeholders::_1))) {
     }
     void function1(ipc::core::message_ptr x) {
+        auto w = worker();
         std::cout << "function1: sender " << x->sender() << std::endl;
     }
 
@@ -36,6 +36,10 @@ public:
         }
         using namespace std::chrono_literals;
         // std::this_thread::sleep_for(10ms);
+    }
+
+    void run(ipc::core::message_ptr mesg) override {
+        function2(std::move(mesg));
     }
 
     ipc::core::evloop::handle_s_ptr handle1;
@@ -59,7 +63,8 @@ ipc::core::local_mutex mutex2;
 int main() {
     std::cerr << "+++++++++++++++++++++++++++++++++++++++++++++++++++++ " << getpid() << std::endl;
     ipc::core::backtrace_init();
-    classA a;
+    eventloop_1 ev1;
+    ev1.start();
 
     if (shm1->open() == false) {
         std::cout << "shm open failed\n";
@@ -85,7 +90,7 @@ int main() {
         }
     }
 
-    ipc::core::worker_ptr wk = ipc::core::worker_man::get_instance().create_worker();
+    ipc::core::worker_ptr wk = ipc::core::make_worker();
     for (i = 0; i < 100; i++) {
         wk->add_task(
             [&msgqueue1](const int &a, const int &b, int &c, int d, ipc::core::shm_ptr shm) {
@@ -136,31 +141,24 @@ int main() {
     }, ipc::core::message::create("", "", "hello task"));
 
     wk->start();
-    bool done = ipc::core::worker_man::get_instance().wait(wk);
-    std::cout << "==========================================wk================== " << done << " pid: " << getpid() << std::endl;
 
     ipc::core::message_args<int, int, std::string> args;
     args << 1 << 2 << "hello world\n";
 
-    ipc::core::worker_ptr worker_ptr = ipc::core::worker_man::get_instance().create_worker();
-    worker_ptr->add_task(
-        []() {
-        },
-        nullptr);
-    ipc::core::evloop_ptr el1 = ipc::core::evloop_man::get_instance().create_evloop(a.handle1);
-    ipc::core::evloop_ptr el2 = ipc::core::evloop_man::get_instance().create_evloop(a.handle2);
+    ipc::core::evloop_ptr el1 = ipc::core::make_evloop(ipc::core::make_worker());
+    ipc::core::evloop_ptr el2 = ipc::core::make_evloop(ipc::core::make_worker());
 
     el1->start();
     el2->start();
 
-    auto ev_worker = el1->get_worker();
+    ipc::core::const_worker_ptr ev_worker = el1->get_worker();
     ev_worker->task_count();
 
     for (i = 0; i < 100; i++) {
-        ipc::core::evloop_man::get_instance().post_event(el2, std::string("sender ").append(std::to_string(i)), "receiver3", &i, 10.0);
+        ev1.post(std::string("sender ").append(std::to_string(i)), "receiver3", &i, 10.0);
     }
 
-    ipc::core::worker_ptr worker1 = ipc::core::worker_man::get_instance().create_worker({
+    ipc::core::worker_ptr worker1 = ipc::core::make_worker({
         {ipc::core::make_task([]() {
             printf("initialize list task 1\n");
         },
@@ -170,20 +168,18 @@ int main() {
         },
                               nullptr)},
     });
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(5000ms);
 
     worker1->start();
-
-    done = ipc::core::worker_man::get_instance().wait(worker1);
-    std::cout << "=====================================worker1======================= " << done << " pid: " << getpid() << std::endl;
-
-    worker_ptr->start();
-    done = ipc::core::worker_man::get_instance().wait(worker_ptr);
-    std::cout << "=====================================worker_ptr======================= " << done << " pid: " << getpid() << std::endl;
-
+    worker1->quit();
+    worker1->detach();
+    wk->quit();
+    wk->detach();
     el1->stop();
     el2->stop();
-    ipc::core::worker_man::get_instance().quit_all();
     shm1->close();
+    ev1.stop();
 
     try {
         ipc_throw_exception("Hello world %s, %d", "fjd", 10);
