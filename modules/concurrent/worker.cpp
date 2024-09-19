@@ -34,8 +34,8 @@ void worker::quit() {
     m_impl->quit();
 }
 
-void worker::wait() {
-    m_impl->wait();
+void worker::join() {
+    m_impl->join();
 }
 
 void worker::detach() {

@@ -22,6 +22,7 @@ public:
     bool is_running() const;
     int start();
     int stop();
+    int wait();
     void set_handle(evloop::handle_w_ptr handle);
     const_worker_ptr get_worker() const;
     worker_ptr get_worker();

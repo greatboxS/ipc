@@ -17,6 +17,7 @@ evloop_p::evloop_p(int id, worker_ptr worker) :
 }
 
 evloop_p::~evloop_p() {
+    m_worker->detach();
 }
 
 int evloop_p::id() const {
@@ -42,8 +43,16 @@ int evloop_p::stop() {
     if (get_state() == static_cast<int>(state::Running)) {
         set_state(state::Stoped);
         m_worker->quit();
-        m_worker->detach();
         ret = 0;
+    }
+    return ret;
+}
+
+int evloop_p::wait() {
+    int ret = -1;
+    if ((get_state() == static_cast<int>(state::Stoped))
+        && (m_worker->state() != static_cast<int>(worker::Exited))) {
+        m_worker->join();
     }
     return ret;
 }

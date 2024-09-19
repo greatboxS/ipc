@@ -185,8 +185,6 @@ int main() {
         ipc_throw_exception("Hello world %s, %d", "fjd", 10);
     } catch (std::exception &ex) {
         std::cout << ex.what() << std::endl;
-    } catch (ipc::core::except &ex) {
-        std::cout << ex.what() << std::endl;
     } catch (...) {
         std::cout << "other exception\n";
     }

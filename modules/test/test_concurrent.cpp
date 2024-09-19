@@ -112,8 +112,6 @@ int main() {
 
     } catch (std::exception &ex) {
         std::cout << ex.what() << std::endl;
-    } catch (ipc::core::except &ex) {
-        std::cout << ex.what() << std::endl;
     } catch (...) {
         std::cout << "other exception\n";
     }

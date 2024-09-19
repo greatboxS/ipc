@@ -26,7 +26,7 @@ public:
     void start();
     void stop();
     void quit();
-    void wait();
+    void join();
     void detach();
     size_t executed_count() const;
     size_t task_count() const;

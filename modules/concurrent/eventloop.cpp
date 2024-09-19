@@ -27,6 +27,10 @@ int evloop::stop() {
     return m_impl->stop();
 }
 
+int evloop::wait() {
+    return m_impl->wait();
+}
+
 void evloop::set_handle(handle_w_ptr handle) {
     m_impl->set_handle(handle);
 }

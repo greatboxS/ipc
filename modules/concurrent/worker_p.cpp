@@ -44,11 +44,11 @@ void worker::impl::start() {
 void worker::impl::stop() {
     std::unique_lock<std::mutex> lock(m_task_queue_mtx);
     if (m_state != worker::Exited) {
-        m_state = worker::Stoped;
+        m_state = worker::Stopped;
     }
 }
 
-void worker::impl::wait() {
+void worker::impl::join() {
     std::unique_lock<std::mutex> lock(m_task_queue_mtx);
     if (m_joined == false) {
         m_joined = true;
