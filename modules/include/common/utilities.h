@@ -1,13 +1,14 @@
-#ifndef __UTILITY_H__
-#define __UTILITY_H__
+#ifndef UTILITIES_H
+#define UTILITIES_H
 
 #include <iostream>
 #include <tuple>
 #include <utility>
 #include <functional>
 
-namespace utility {
-namespace detail {
+namespace ipc::util {
+
+namespace tuple_helper {
 template <class F, class Tuple, std::size_t... Is>
 auto invoke_over_tuple(F &&f, Tuple &&tuple, std::index_sequence<Is...>) {
     using expand = int[];
@@ -34,27 +35,27 @@ struct reverse<std::index_sequence<I, Is...>> {
     using subset = typename reverse<std::index_sequence<Is...>>::type;
     using type = typename append<subset, I>::result;
 };
-} // namespace detail
+} // namespace tuple_helper
 
 template <class Sequence>
-using reverse = typename detail::reverse<Sequence>::type;
+using reverse = typename tuple_helper::reverse<Sequence>::type;
 
 template <class Tuple, class F>
 auto forward_over_tuple(F &&f, Tuple &&tuple) {
     using tuple_type = std::decay_t<Tuple>;
     constexpr auto size = std::tuple_size<tuple_type>::value;
-    return detail::invoke_over_tuple(std::forward<F>(f),
-                                     std::forward<Tuple>(tuple),
-                                     std::make_index_sequence<size>());
+    return tuple_helper::invoke_over_tuple(std::forward<F>(f),
+                                           std::forward<Tuple>(tuple),
+                                           std::make_index_sequence<size>());
 };
 
 template <class Tuple, class F>
 auto reverse_over_tuple(F &&f, Tuple &&tuple) {
     using tuple_type = std::decay_t<Tuple>;
     constexpr auto size = std::tuple_size<tuple_type>::value;
-    return detail::invoke_over_tuple(std::forward<F>(f),
-                                     std::forward<Tuple>(tuple),
-                                     reverse<std::make_index_sequence<size>>());
+    return tuple_helper::invoke_over_tuple(std::forward<F>(f),
+                                           std::forward<Tuple>(tuple),
+                                           reverse<std::make_index_sequence<size>>());
 };
 
 template <typename Tuple, std::size_t... Is>
@@ -109,5 +110,6 @@ size_t getAddress(std::function<T(U...)> f) {
     return (size_t)*fnPointer;
 }
 
-} // namespace utility
-#endif // __UTILITY_H__
+} // namespace ipc::util
+
+#endif // UTILITIES_H
