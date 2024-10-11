@@ -46,6 +46,7 @@ public:
                        ipc::core::make_trigger(1000));
 
         tg4 = add_task(ipc::core::make_task([]() {
+                           throw std::runtime_error("dfdsfsefl");
                            printf("chain task 4: \n");
                            std::this_thread::sleep_for(100ms);
                        },
@@ -151,7 +152,7 @@ int main() {
     }
 
     auto s = std::chrono::high_resolution_clock::now();
-    calback.emit(42, "Hello World!");
+    calback(42, "Hello World!");
     std::cout << "emit 1: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - s).count() << std::endl;
     std::cout << "count :" << calback.count() << std::endl;
 

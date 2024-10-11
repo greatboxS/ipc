@@ -46,6 +46,16 @@ public:
     ipc::core::evloop::handle_s_ptr handle2;
 };
 
+class ts1 {
+public:
+    ts1() {
+        std::cout << "contructor" << std::endl;
+    }
+    ~ts1() {
+        std::cout << "deconstructor" << std::endl;
+    }
+};
+
 std::string task_handle(ipc::core::message_ptr mesg) {
     std::cout << "Task task_handle\n";
     if (mesg != nullptr) {
@@ -65,6 +75,10 @@ int main() {
     ipc::core::backtrace_init();
     eventloop_1 ev1;
     ev1.start();
+
+    std::shared_ptr<void> ptr = std::make_shared<ts1>();
+    ptr = std::shared_ptr<ts1>(new ts1());
+    // ptr.reset();
 
     if (shm1->open() == false) {
         std::cout << "shm open failed\n";
@@ -180,6 +194,10 @@ int main() {
     el2->stop();
     shm1->close();
     ev1.stop();
+
+
+
+
 
     try {
         ipc_throw_exception("Hello world %s, %d", "fjd", 10);

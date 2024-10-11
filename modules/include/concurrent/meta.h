@@ -301,6 +301,14 @@ public:
     }
 
     /**
+     * @brief Removes all of the container value.
+     *
+     * This method removes all the key-value of the container
+     *
+     */
+    void clear() { m_values.clear(); }
+
+    /**
      * @brief Returns the number of key-value pairs in the container.
      *
      * This method returns the number of key-value pairs currently stored in the container.

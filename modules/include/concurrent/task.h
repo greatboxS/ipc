@@ -1,21 +1,21 @@
 /**
  * @file task.h
  * @brief Defines the `task` class template for managing and executing tasks with or without results.
- * 
+ *
  * This header file provides the definition of the `task` class template which supports task execution
  * and result management. It includes two primary templates:
  * - `task<R, Args...>`: For tasks that return a result of type `R`.
  * - `task<void, Args...>`: For tasks that do not return a result (void).
- * 
+ *
  * Each task class handles:
  * - Execution of the task function.
  * - State management (Created, Executing, Finished, Failed).
  * - Exception handling.
  * - Callback invocation upon task completion.
- * 
+ *
  * The file also includes utility functions for creating tasks:
  * - `make_task`: To create a `task` object using function objects or function pointers.
- * 
+ *
  * The `task` class template provides mechanisms to check task completion, retrieve results, and
  * handle exceptions that occur during task execution.
  */
@@ -93,6 +93,7 @@ public:
         } catch (...) {
             m_task_state.store(static_cast<int>(task_base::state::Failed));
             m_exception_ptr = std::current_exception();
+            throw m_exception_ptr;
         }
 
         {
@@ -123,9 +124,13 @@ public:
      * @return A pointer to the `task_result` containing the result of the task, or `nullptr` if the task has no result.
      */
     const task_result *get(int ms = si_task_get_timeout) override {
+        task_result *_task_result = nullptr;
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] { return m_finished; });
-        return &m_task_result;
+        bool done = m_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] { return m_finished; });
+        if (done == true) {
+            _task_result = &m_task_result;
+        }
+        return _task_result;
     }
 
     /**
@@ -207,6 +212,7 @@ public:
         m_task_state(static_cast<int>(task_base::state::Created)),
         m_args(std::forward<Args>(args)...),
         m_finished(false),
+        m_task_result{},
         m_exception_ptr{nullptr},
         m_mutex{},
         m_condition{} {}
@@ -233,6 +239,7 @@ public:
         } catch (...) {
             m_task_state.store(static_cast<int>(task_base::state::Failed));
             m_exception_ptr = std::current_exception();
+            throw m_exception_ptr;
         }
 
         {
@@ -263,9 +270,13 @@ public:
      * @return Always `nullptr` for tasks with `void` return type.
      */
     const task_result *get(int ms = si_task_get_timeout) override {
+        task_result *_task_result = nullptr;
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] { return m_finished; });
-        return nullptr;
+        bool done = m_condition.wait_for(lock, std::chrono::milliseconds(ms), [this] { return m_finished; });
+        if (done == true) {
+            _task_result = &m_task_result;
+        }
+        return _task_result;
     }
 
     /**
@@ -313,6 +324,7 @@ private:
     std::atomic<int> m_task_state = {static_cast<int>(task_base::state::Created)}; ///< The state of the task.
     std::tuple<Args...> m_args = {};                                               ///< The arguments for the function.
     bool m_finished = false;                                                       ///< Flag indicating if the task is finished.
+    task_result m_task_result = {};                                                ///< The result of the task.
     std::exception_ptr m_exception_ptr = {nullptr};                                ///< The exception pointer if an exception occurred.
     std::mutex m_mutex = {};                                                       ///< Mutex for synchronizing access.
     std::condition_variable m_condition = {};                                      ///< Condition variable for waiting.
