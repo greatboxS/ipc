@@ -28,9 +28,9 @@ SOCKET_T socket_create(int32_t sockettype, int blockmode, int addrfamily) {
 
     if (sockettype == eSOCKET_TCP) {
         type = SOCK_STREAM;
-    } else if (sockettype = eSOCKET_UDP) {
+    } else if (sockettype == eSOCKET_UDP) {
         type = SOCK_DGRAM;
-    } else if (sockettype = eSOCKET_HOST) {
+    } else if (sockettype == eSOCKET_HOST) {
         domain = AF_UNIX;
         type = SOCK_SEQPACKET;
         family = AF_UNIX;
@@ -342,8 +342,6 @@ int socket_recv_from(SOCKET_T &sk, SOCKADDR_T &recvaddr, char *buff, size_t size
 }
 
 int socket_send_multicast(SOCKET_T &sk, const char *groupip, uint16_t port, const char *buff, size_t size) {
-    int bytes = 0;
-    socklen_t addrSize = 0;
     struct sockaddr_in stGroupSocket;
     char loopch = 0;
 

@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(ipc VERSION 1.0.0 LANGUAGES CXX)
 
-add_compile_options("-g")
+add_compile_options("-g;-Wall")
 
 add_subdirectory(debuger)
 add_subdirectory(core)

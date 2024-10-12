@@ -45,7 +45,7 @@ public:
      * @enum state
      * @brief Enum representing the possible states of a task.
      */
-    enum class state {
+    enum class State {
         Created = 0, ///< Task has been created but not yet executed.
         Executing,   ///< Task is currently executing.
         Finished,    ///< Task has successfully completed execution.

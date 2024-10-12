@@ -7,11 +7,11 @@ namespace ipc::core {
 csocket::csocket(int32_t sockettype, int32_t mode) :
     m_sockettype(sockettype),
     m_mode(mode),
-    m_stSk(),
+    m_s32IsAcceptedSocket(0),
     m_s32IsOpen(0),
     m_s32IsConnected(0),
-    m_s32IsAcceptedSocket(0),
-    m_stRemoteAddr(),
+    m_stSk{},
+    m_stRemoteAddr{},
     m_poSocketSync(NULL) {
     m_poSocketSync = new cmutex();
     m_poSocketSync->create();
@@ -20,10 +20,10 @@ csocket::csocket(int32_t sockettype, int32_t mode) :
 csocket::csocket(SOCKET_T &socket) :
     m_sockettype(-1),
     m_mode(-1),
-    m_stSk(),
+    m_s32IsAcceptedSocket(0),
     m_s32IsOpen(0),
     m_s32IsConnected(0),
-    m_s32IsAcceptedSocket(0),
+    m_stSk(),
     m_stRemoteAddr(),
     m_poSocketSync(NULL) {
     m_stSk = socket;

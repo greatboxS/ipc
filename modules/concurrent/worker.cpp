@@ -42,6 +42,10 @@ void worker::detach() {
     m_impl->detach();
 }
 
+void worker::wait_for_completed() {
+    m_impl->wait_for_completed();
+}
+
 size_t worker::executed_count() const {
     return m_impl->executed_count();
 }

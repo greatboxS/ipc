@@ -63,7 +63,7 @@ public:
     task(F func, callback_fnc callback, Args &&...args) :
         m_func(std::move(func)),
         m_callback(std::move(callback)),
-        m_task_state(static_cast<int>(task_base::state::Created)),
+        m_task_state(static_cast<int>(task_base::State::Created)),
         m_args(std::forward<Args>(args)...),
         m_finished(false),
         m_task_result{},
@@ -86,12 +86,12 @@ public:
      */
     void execute() override {
         try {
-            m_task_state.store(static_cast<int>(task_base::state::Executing));
+            m_task_state.store(static_cast<int>(task_base::State::Executing));
             task_handle(std::index_sequence_for<Args...>{});
-            m_task_state.store(static_cast<int>(task_base::state::Finished));
+            m_task_state.store(static_cast<int>(task_base::State::Finished));
 
         } catch (...) {
-            m_task_state.store(static_cast<int>(task_base::state::Failed));
+            m_task_state.store(static_cast<int>(task_base::State::Failed));
             m_exception_ptr = std::current_exception();
             throw m_exception_ptr;
         }
@@ -148,7 +148,7 @@ public:
      * @return `true` if the task is finished; otherwise, `false`.
      */
     bool finished() const override {
-        return (m_task_state.load() == static_cast<int>(task_base::state::Finished));
+        return (m_task_state.load() == static_cast<int>(task_base::State::Finished));
     }
 
     /**
@@ -157,7 +157,7 @@ public:
      * @return `true` if the task has failed; otherwise, `false`.
      */
     bool error() const override {
-        return (m_task_state.load() == static_cast<int>(task_base::state::Failed));
+        return (m_task_state.load() == static_cast<int>(task_base::State::Failed));
     }
 
 private:
@@ -175,7 +175,7 @@ private:
 
     task_fnc m_func = nullptr;                                                     ///< The function to execute.
     callback_fnc m_callback = nullptr;                                             ///< The callback function.
-    std::atomic<int> m_task_state = {static_cast<int>(task_base::state::Created)}; ///< The state of the task.
+    std::atomic<int> m_task_state = {static_cast<int>(task_base::State::Created)}; ///< The state of the task.
     std::tuple<Args...> m_args = {};                                               ///< The arguments for the function.
     bool m_finished = false;                                                       ///< Flag indicating if the task is finished.
     task_result m_task_result = {};                                                ///< The result of the task.
@@ -209,7 +209,7 @@ public:
     task(F func, callback_fnc callback, Args &&...args) :
         m_func(std::move(func)),
         m_callback(std::move(callback)),
-        m_task_state(static_cast<int>(task_base::state::Created)),
+        m_task_state(static_cast<int>(task_base::State::Created)),
         m_args(std::forward<Args>(args)...),
         m_finished(false),
         m_task_result{},
@@ -232,12 +232,12 @@ public:
      */
     void execute() override {
         try {
-            m_task_state.store(static_cast<int>(task_base::state::Executing));
+            m_task_state.store(static_cast<int>(task_base::State::Executing));
             task_handle(std::index_sequence_for<Args...>{});
-            m_task_state.store(static_cast<int>(task_base::state::Finished));
+            m_task_state.store(static_cast<int>(task_base::State::Finished));
 
         } catch (...) {
-            m_task_state.store(static_cast<int>(task_base::state::Failed));
+            m_task_state.store(static_cast<int>(task_base::State::Failed));
             m_exception_ptr = std::current_exception();
             throw m_exception_ptr;
         }
@@ -294,7 +294,7 @@ public:
      * @return `true` if the task is finished; otherwise, `false`.
      */
     bool finished() const override {
-        return (m_task_state.load() == static_cast<int>(task_base::state::Finished));
+        return (m_task_state.load() == static_cast<int>(task_base::State::Finished));
     }
 
     /**
@@ -303,7 +303,7 @@ public:
      * @return `true` if the task has failed; otherwise, `false`.
      */
     bool error() const override {
-        return (m_task_state.load() == static_cast<int>(task_base::state::Failed));
+        return (m_task_state.load() == static_cast<int>(task_base::State::Failed));
     }
 
 private:
@@ -321,7 +321,7 @@ private:
 
     task_fnc m_func = nullptr;                                                     ///< The function to execute.
     callback_fnc m_callback = nullptr;                                             ///< The callback function.
-    std::atomic<int> m_task_state = {static_cast<int>(task_base::state::Created)}; ///< The state of the task.
+    std::atomic<int> m_task_state = {static_cast<int>(task_base::State::Created)}; ///< The state of the task.
     std::tuple<Args...> m_args = {};                                               ///< The arguments for the function.
     bool m_finished = false;                                                       ///< Flag indicating if the task is finished.
     task_result m_task_result = {};                                                ///< The result of the task.

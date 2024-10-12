@@ -17,6 +17,7 @@ worker::impl::impl(const std::vector<task_base_ptr> &task_list, int id) :
     m_condition{},
     m_joined(false),
     m_executed_count(0),
+    m_queue_empty_cv{},
     m_worker_thread(std::thread(&impl::run, this)) {
     for (auto task : task_list) {
         m_task_queue.emplace(std::move(task), task_base_weak_ptr{});
@@ -30,29 +31,24 @@ int worker::impl::id() const {
 }
 
 int worker::impl::state() const {
-    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    return static_cast<int>(m_state);
+    return static_cast<int>(m_state.load());
 }
 
 void worker::impl::start() {
-    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_state != worker::Exited) {
-        m_state = worker::Running;
+    if (state() != worker::Exited) {
+        set_state(worker::Running);
     }
 }
 
 void worker::impl::stop() {
-    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_state != worker::Exited) {
-        m_state = worker::Stopped;
+    if (state() != worker::Exited) {
+        set_state(worker::Stopped);
     }
 }
 
 void worker::impl::join() {
-    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_joined == false) {
-        m_joined = true;
-        lock.unlock();
+    if (m_joined.load() == false) {
+        m_joined.store(true);
         if (m_worker_thread.joinable() == true) {
             m_worker_thread.join();
         }
@@ -60,19 +56,24 @@ void worker::impl::join() {
 }
 
 void worker::impl::detach() {
-    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_joined == false) {
-        m_joined = true;
+    if (m_joined.load() == false) {
+        m_joined.store(true);
         m_worker_thread.detach();
     }
 }
 
+void worker::impl::wait_for_completed() {
+    std::unique_lock<std::mutex> lock(m_task_queue_mtx);
+    if (m_task_queue.empty() == false) {
+        m_queue_empty_cv.wait(lock, [this]() {
+            return m_task_queue.empty();
+        });
+    }
+}
+
 void worker::impl::quit() {
-    {
-        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-        if (m_state != worker::Exited) {
-            m_state = worker::Finalized;
-        }
+    if (state() != worker::Exited) {
+        set_state(worker::Finalized);
     }
     m_condition.notify_all();
 }
@@ -115,7 +116,7 @@ void worker::impl::assign_to(int cpu) {
 
 void worker::impl::add_task(task_base_ptr task) {
     std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_state != worker::Exited) {
+    if (state() != worker::Exited) {
         m_task_queue.emplace(std::move(task), task_base_weak_ptr{});
         m_condition.notify_one();
     }
@@ -123,7 +124,7 @@ void worker::impl::add_task(task_base_ptr task) {
 
 void worker::impl::add_weak_task(task_base_weak_ptr task) {
     std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_state != worker::Exited) {
+    if (state() != worker::Exited) {
         m_task_queue.emplace(task_base_ptr{nullptr}, std::move(task));
         m_condition.notify_one();
     }
@@ -131,7 +132,7 @@ void worker::impl::add_weak_task(task_base_weak_ptr task) {
 
 void worker::impl::reset() {
     std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-    if (m_state != worker::Exited) {
+    if (state() != worker::Exited) {
         m_task_queue = {};
     }
 }
@@ -140,8 +141,13 @@ std::thread::id worker::impl::thread_id() const {
     return m_worker_thread.get_id();
 }
 
+void worker::impl::set_state(worker::State s) {
+    m_state.store(s);
+}
+
 void worker::impl::run() {
     using namespace std::chrono_literals;
+    bool _queue_empty = false;
     do {
         task_base_ptr _task = {nullptr};
         try {
@@ -149,12 +155,11 @@ void worker::impl::run() {
                 std::unique_lock<std::mutex> lock(m_task_queue_mtx);
                 if (m_task_queue.size() == 0) {
                     m_condition.wait_for(lock, std::chrono::milliseconds(1000), [this] {
-                        return ((m_state != worker::Running) || (m_task_queue.empty() == false));
+                        return ((state() != worker::Running) || (m_task_queue.empty() == false));
                     });
                 }
-                if (m_state == worker::Finalized) {
-                    break;
-                } else if (m_state == worker::Running) {
+
+                if (state() == worker::Running) {
                     if (m_task_queue.size() > 0) {
                         std::pair<task_base_ptr, task_base_weak_ptr> p = std::move(m_task_queue.front());
                         if (p.first != nullptr) {
@@ -163,7 +168,13 @@ void worker::impl::run() {
                             _task = p.second.lock();
                         }
                         m_task_queue.pop();
+
+                        if (m_task_queue.size() == 0) {
+                            _queue_empty = true;
+                        }
                     }
+                } else if (state() == worker::Finalized) {
+                    break;
                 } else {
                     std::this_thread::sleep_for(1ms);
                 }
@@ -172,15 +183,17 @@ void worker::impl::run() {
             if (_task != nullptr) {
                 _task->execute();
                 m_executed_count.fetch_add(1U);
+
+                if (_queue_empty == true) {
+                    _queue_empty = false;
+                    m_queue_empty_cv.notify_all();
+                }
             }
         } catch (...) {
             // Do nothing
         }
-    } while (m_state != worker::Finalized);
-    {
-        std::unique_lock<std::mutex> lock(m_task_queue_mtx);
-        m_state = worker::Exited;
-    }
+    } while (state() != worker::Finalized);
+    set_state(worker::Exited);
 }
 
 } // namespace ipc::core

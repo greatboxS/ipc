@@ -5,6 +5,7 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
 #include <condition_variable>
 #include <functional>
 #include <atomic>
@@ -28,6 +29,7 @@ public:
     void quit();
     void join();
     void detach();
+    void wait_for_completed();
     size_t executed_count() const;
     size_t task_count() const;
     void assign_to(int cpu);
@@ -37,15 +39,17 @@ public:
     std::thread::id thread_id() const;
 
 private:
+    void set_state(worker::State s);
     void run();
 
     int m_id = 0;
-    worker::State m_state = worker::Idle;
+    std::atomic<worker::State> m_state = worker::Idle;
     std::queue<std::pair<task_base_ptr, task_base_weak_ptr>> m_task_queue = {};
     mutable std::mutex m_task_queue_mtx = {};
     std::condition_variable m_condition = {};
-    bool m_joined = false;
+    std::atomic<bool> m_joined = false;
     std::atomic<size_t> m_executed_count = {0};
+    std::condition_variable m_queue_empty_cv{};
     std::thread m_worker_thread = {};
 };
 

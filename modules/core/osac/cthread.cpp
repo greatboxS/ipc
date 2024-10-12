@@ -8,7 +8,12 @@
 
 namespace ipc::core {
 cthread::cthread() :
-    m_s32Terminated(0), m_s32State(eTHREAD_UNKNOWN),
+    m_stThreadInfo{},
+    m_stMutex{},
+    m_s32State(eTHREAD_UNKNOWN),
+    m_s32Terminated(0),
+    m_pParam(nullptr),
+    m_pCallback(nullptr),
     m_valid(std::make_shared<int>()),
     m_handle({this, m_valid}) {
     memset(&m_stThreadInfo, 0, sizeof(m_stThreadInfo));
@@ -145,7 +150,6 @@ int cthread::finalize() {
 }
 
 bool cthread::wait_for_complete(uint64_t ms) {
-    auto stime = std::chrono::high_resolution_clock::now();
     uint64_t tick = 0;
     while (mutex_safe_read(m_s32State, m_stMutex) != static_cast<int32_t>(eTHREAD_TERMINATED)) {
         cthread::delay(1);

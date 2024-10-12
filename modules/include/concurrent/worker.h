@@ -93,6 +93,11 @@ public:
     void detach();
 
     /**
+     * @brief Wait for all the task to be completed.
+     */
+    void wait_for_completed();
+
+    /**
      * @brief Returns the count of executed tasks.
      * @return The count of executed tasks.
      */
@@ -162,7 +167,7 @@ public:
     auto add_task(R (*func)(Args...), std::function<void(ipc::core::task_base_ptr)> callback, Args &&...args) {
         auto new_task = make_task(func, std::move(callback), std::forward<Args>(args)...);
         add_task(new_task);
-        return std::move(new_task);
+        return new_task;
     }
 
     /**
@@ -177,7 +182,7 @@ public:
     auto add_nocallback_task(F func, Args &&...args) {
         auto new_task = make_task(std::move(func), std::function<void(ipc::core::task_base_ptr)>(nullptr), std::forward<Args>(args)...);
         add_task(new_task);
-        return std::move(new_task);
+        return new_task;
     }
 };
 

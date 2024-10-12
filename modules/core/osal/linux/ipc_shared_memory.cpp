@@ -69,7 +69,6 @@ int shared_mem_open(SHM_T &shm, const char *name, size_t size) {
  * @return int  0 if successed, -2 if mmap failed, otherwise is errno
  */
 int shared_mem_create(SHM_T &shm, const char *name, size_t size) {
-    int ret = 0;
     int fd = 0;
 
     GENERATE_SHM_NAME(name);

@@ -59,12 +59,12 @@ TEST_F(TaskTest, TaskWithVoidReturnTypeExecutesCorrectly) {
 // Test task state transitions
 TEST_F(TaskTest, TaskStateTransitionsCorrectly) {
     auto t = make_task(add, callback, 1, 2);
-    EXPECT_EQ(t->state(), static_cast<int>(ipc::core::task_base::state::Created));
+    EXPECT_EQ(t->state(), static_cast<int>(ipc::core::task_base::State::Created));
 
     try {
         t->execute();
     } catch (...) {}
-    EXPECT_EQ(t->state(), static_cast<int>(ipc::core::task_base::state::Finished));
+    EXPECT_EQ(t->state(), static_cast<int>(ipc::core::task_base::State::Finished));
 }
 
 // Test task exception handling

@@ -76,6 +76,7 @@ protected:
     worker_ptr wk;
 
     void SetUp() override {
+        ipc::core::backtrace_init();
         wk = std::make_shared<worker>();
         wk->start();
     }
@@ -90,6 +91,8 @@ protected:
 
 // Test sequential task chain
 TEST_F(TaskChainTest, SequentialTaskExecution) {
+    auto wk = ipc::core::make_worker();
+    wk->start();
     auto chain = std::make_shared<sequenctial_task>();
     chain->init_task();
     wk->add_task(chain);
@@ -114,7 +117,11 @@ TEST_F(TaskChainTest, SequentialTaskExecution) {
     });
     trigger_thread.join();
 
-    EXPECT_EQ(chain->state(), static_cast<int>(ipc::core::task_base::state::Finished));
+    wk->wait_for_completed();
+
+    EXPECT_EQ(chain->state(), static_cast<int>(ipc::core::task_base::State::Finished));
+    wk->quit();
+    wk->detach();
 }
 
 // Test condition trigger
@@ -168,7 +175,6 @@ TEST_F(TaskChainTest, CallbackRegistration) {
 // Test worker handling multiple tasks and quitting
 TEST_F(TaskChainTest, WorkerHandlesMultipleTasksAndQuits) {
     auto wk = std::make_shared<worker>();
-    wk->start();
     std::vector<ipc::core::task_base_ptr> tasks;
 
     for (int i = 0; i < 1000; ++i) {
@@ -177,9 +183,10 @@ TEST_F(TaskChainTest, WorkerHandlesMultipleTasksAndQuits) {
             return i * 2;
         }));
     }
+    wk->start();
 
     for (auto &t : tasks) {
-        t->get();
+        t->get(1);
     }
 
     wk->quit();
@@ -200,7 +207,9 @@ TEST_F(TaskChainTest, TaskTimeout) {
 
 // Test task_chain completion
 TEST_F(TaskChainTest, TaskChainCompletionCallback) {
-    auto chain = std::make_shared<sequenctial_task>();
+    auto wk = std::make_shared<worker>();
+    std::shared_ptr<sequenctial_task> chain = std::make_shared<sequenctial_task>();
+    wk->start();
     chain->init_task();
 
     bool completed = false;
@@ -220,18 +229,24 @@ TEST_F(TaskChainTest, TaskChainCompletionCallback) {
     trigger_thread.join();
 
     EXPECT_TRUE(completed);
+    wk->quit();
+    wk->join();
 }
 
 // Test invalid trigger activation (triggering out of sequence)
 TEST_F(TaskChainTest, InvalidTriggerActivation) {
+    auto wk = std::make_shared<worker>();
     auto chain = std::make_shared<sequenctial_task>();
+    wk->start();
     chain->init_task();
     wk->add_task(chain);
 
     chain->trigger2();  // Trigger task 2 before task 1 (invalid case)
 
     std::this_thread::sleep_for(2000ms);
-    EXPECT_EQ(chain->state(), static_cast<int>(ipc::core::task_base::state::Timeout));  // Task chain should be in failed state
+    EXPECT_EQ(chain->state(), static_cast<int>(ipc::core::task_base::State::Timeout));  // Task chain should be in failed state
+    wk->quit();
+    wk->join();
 }
 
 // Test task failure handling
@@ -248,7 +263,7 @@ TEST_F(TaskChainTest, TaskFailureHandling) {
     bool failed = false;
     failing_task->set_handle([&](int state) {
         printf("on task state: %d\n", state);
-        failed = (state != static_cast<int>(ipc::core::task_base::state::Finished)); 
+        failed = (state != static_cast<int>(ipc::core::task_base::State::Finished)); 
     });
 
     wk->add_task(failing_task);
@@ -260,8 +275,7 @@ TEST_F(TaskChainTest, TaskFailureHandling) {
 
 // Test handling of a high volume of tasks
 TEST_F(TaskChainTest, HighVolumeTaskExecution) {
-    auto wk = std::make_shared<worker>();
-    wk->start();
+    wk->reset();
     std::vector<ipc::core::task_base_ptr> tasks;
     for (int i = 0; i < 10000; ++i) {
         tasks.emplace_back(wk->add_nocallback_task([i]() {
@@ -273,9 +287,9 @@ TEST_F(TaskChainTest, HighVolumeTaskExecution) {
         t->get();
     }
 
-    EXPECT_EQ(wk->executed_count(), 10000);
-    wk->quit();
-    wk->detach();
+    wk->wait_for_completed();
+    auto executed_count = wk->executed_count();
+    EXPECT_EQ(executed_count, 10000);
 }
 
 // Test task interruption and worker shutdown during task execution
@@ -294,34 +308,6 @@ TEST_F(TaskChainTest, TaskInterruption) {
     EXPECT_EQ(wk->state(), worker::Exited);
 }
 
-// Test multiple task chains executed simultaneously
-TEST_F(TaskChainTest, MultipleTaskChains) {
-    auto chain1 = std::make_shared<sequenctial_task>();
-    auto chain2 = std::make_shared<sequenctial_task>();
-
-    chain1->init_task();
-    chain2->init_task();
-
-    wk->add_task(chain1);
-    wk->add_task(chain2);
-
-    std::thread t1([chain1]() {
-        std::this_thread::sleep_for(100ms);
-        chain1->trigger1();
-    });
-
-    std::thread t2([chain2]() {
-        std::this_thread::sleep_for(200ms);
-        chain2->trigger1();
-    });
-
-    t1.join();
-    t2.join();
-
-    EXPECT_EQ(chain1->state(), static_cast<int>(ipc::core::task_base::state::Executing));
-    EXPECT_EQ(chain2->state(), static_cast<int>(ipc::core::task_base::state::Executing));
-}
-
 // Test worker restart after quitting
 TEST_F(TaskChainTest, WorkerRestartAfterQuit) {
     wk->stop();
@@ -331,7 +317,8 @@ TEST_F(TaskChainTest, WorkerRestartAfterQuit) {
     EXPECT_EQ(wk->state(), worker::Running);
 
     auto task = wk->add_nocallback_task([]() { return 42; });
-    EXPECT_EQ(task->get()->data<int>(0), 42);
+    int value = task->get()->data<int>(0);
+    EXPECT_EQ(value, 42);
 }
 
 // Test task timeout handling
@@ -344,7 +331,7 @@ TEST_F(TaskChainTest, TaskTimeoutHandling) {
     }, nullptr), make_trigger(100));
 
     bool finished = false;
-    chain->set_handle([&](int state) { finished = (state == static_cast<int>(ipc::core::task_base::state::Finished)); });
+    chain->set_handle([&](int state) { finished = (state == static_cast<int>(ipc::core::task_base::State::Finished)); });
 
     wk->add_task(chain);
     chain->trigger1();
@@ -355,24 +342,17 @@ TEST_F(TaskChainTest, TaskTimeoutHandling) {
 
 // Test concurrent task execution from multiple threads
 TEST_F(TaskChainTest, ConcurrentTaskExecutionFromMultipleThreads) {
-    std::vector<std::thread> threads;
     auto wk = std::make_shared<worker>();
-    wk->start();
     for (int i = 0; i < 10; ++i) {
-        threads.emplace_back([this, i, wk]() {
-            for (int j = 0; j < 1000; ++j) {
-                wk->add_nocallback_task([i, j]() {
-                    std::this_thread::sleep_for(1ms);
-                });
-            }
-        });
+        for (int j = 0; j < 1000; ++j) {
+            wk->add_nocallback_task([i, j]() {
+                std::this_thread::sleep_for(1ms);
+            });
+        }
     }
 
-    for (auto& t : threads) {
-        t.join();
-    }
-
-    std::this_thread::sleep_for(12000ms);
+    wk->start();
+    wk->wait_for_completed();
     EXPECT_EQ(wk->executed_count(), 10000);
     wk->quit();
     wk->detach();

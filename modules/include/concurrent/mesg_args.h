@@ -87,7 +87,7 @@ inline std::string parser<std::string>::parse_element(std::stringstream &stream,
 
     str.resize(ele.size);
     stream.read(str.data(), ele.size);
-    return std::move(str);
+    return str;
 }
 
 template <>

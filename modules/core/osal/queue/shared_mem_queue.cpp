@@ -88,7 +88,7 @@ int shared_mem_queue::push_back(const char *buff, size_t _size) {
 
     memcpy(node->pAddr, buff, _size);
     *(node->pu32Size) = static_cast<uint32_t>(_size);
-    m_pstQueueHeader->s32WIndex = (++m_pstQueueHeader->s32WIndex) % m_pstQueueHeader->u32Msgcount;
+    m_pstQueueHeader->s32WIndex = ((m_pstQueueHeader->s32WIndex + 1) % m_pstQueueHeader->u32Msgcount);
 
     if (m_pstQueueHeader->s32WIndex == m_pstQueueHeader->s32RIndex) {
         m_pstQueueHeader->s32Full = 1;
@@ -162,7 +162,6 @@ void *shared_mem_queue::front(size_t *size) {
         return nullptr;
     }
 
-    int ret = 0;
     BufferNode_t *node = &m_pstBufferNodes[m_pstQueueHeader->s32RIndex];
     if (size) {
         *size = *(node->pu32Size);
@@ -186,7 +185,6 @@ void *shared_mem_queue::back(size_t *size) {
         return nullptr;
     }
 
-    int ret = 0;
     int index = (m_pstQueueHeader->s32WIndex > 0 ? m_pstQueueHeader->s32WIndex : (m_pstQueueHeader->u32Msgcount - 1));
     BufferNode_t *node = &m_pstBufferNodes[index];
     if (size) {
@@ -235,7 +233,7 @@ int shared_mem_queue::pop() {
         return -2;
     }
     m_pstQueueHeader->s32Full = 0;
-    m_pstQueueHeader->s32RIndex = (++m_pstQueueHeader->s32RIndex) % m_pstQueueHeader->u32Msgcount;
+    m_pstQueueHeader->s32RIndex = ((m_pstQueueHeader->s32RIndex + 1) % m_pstQueueHeader->u32Msgcount);
     return 0;
 }
 

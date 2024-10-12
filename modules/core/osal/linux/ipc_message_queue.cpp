@@ -194,7 +194,6 @@ int mesgqueue_create(MSGQ_T &msgq, const char *name, size_t msgsize, size_t msgc
     strncpy(msgq.mqname, name, sizeof(msgq.mqname));
     return RET_OK;
 #else
-    int ret = 0;
     int fd = 0;
     struct mq_attr attr;
     memset(&attr, 0, sizeof(attr));
